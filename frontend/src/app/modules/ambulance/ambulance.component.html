@@ -1,0 +1,197 @@
+<div class="fade-in amb-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><mat-icon class="title-icon">local_shipping</mat-icon> Ambulance Fleet</h1>
+      <p class="page-sub">Real-time dispatch, tracking & fleet management</p>
+    </div>
+    <div class="header-btns">
+      <button mat-stroked-button (click)="load()"><mat-icon>refresh</mat-icon> Refresh</button>
+      <button mat-raised-button class="btn-register" (click)="showRegisterForm = !showRegisterForm">
+        <mat-icon>add</mat-icon> Register
+      </button>
+    </div>
+  </div>
+
+  <!-- Register Form -->
+  <mat-card class="register-card" *ngIf="showRegisterForm">
+    <mat-card-header>
+      <mat-card-title>Register New Ambulance</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="registerForm" (ngSubmit)="registerAmbulance()" class="register-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Vehicle Number</mat-label>
+          <input matInput formControlName="vehicleNumber" placeholder="MH-12-AB-0001">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Type</mat-label>
+          <mat-select formControlName="type">
+            <mat-option *ngFor="let t of vehicleTypes" [value]="t">{{ t | titlecase }} Life Support</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Model</mat-label>
+          <input matInput formControlName="model" placeholder="Toyota HiAce">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Year</mat-label>
+          <input matInput type="number" formControlName="year">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-col">
+          <mat-label>Equipment (comma separated)</mat-label>
+          <input matInput formControlName="equipment" placeholder="Defibrillator, Oxygen, Stretcher">
+        </mat-form-field>
+        <div class="form-actions full-col">
+          <button mat-button type="button" (click)="showRegisterForm = false">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="registerForm.invalid || registering">
+            <mat-spinner *ngIf="registering" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+            Register
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Stats Row -->
+  <div class="stats-row" *ngIf="ambulances.length">
+    <div class="stat-pill available">
+      <mat-icon>check_circle</mat-icon>
+      <span class="num">{{ countByStatus('available') }}</span>
+      <span class="lbl">Available</span>
+    </div>
+    <div class="stat-pill dispatched">
+      <mat-icon>directions_run</mat-icon>
+      <span class="num">{{ countByStatus('dispatched') }}</span>
+      <span class="lbl">Dispatched</span>
+    </div>
+    <div class="stat-pill maintenance">
+      <mat-icon>build</mat-icon>
+      <span class="num">{{ countByStatus('maintenance') }}</span>
+      <span class="lbl">Maintenance</span>
+    </div>
+    <div class="stat-pill total">
+      <mat-icon>local_shipping</mat-icon>
+      <span class="num">{{ ambulances.length }}</span>
+      <span class="lbl">Total Fleet</span>
+    </div>
+  </div>
+
+  <!-- Live Map -->
+  <app-ambulance-map [ambulances]="ambulances" *ngIf="!loading && ambulances.length"></app-ambulance-map>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <mat-spinner diameter="52"></mat-spinner>
+    <p>Loading fleet...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && ambulances.length === 0">
+    <mat-icon class="empty-icon">local_shipping</mat-icon>
+    <h2>No Ambulances Registered</h2>
+    <p>Register your first ambulance to start managing your fleet and dispatch services.</p>
+    <button mat-raised-button color="primary" (click)="showRegisterForm = true">
+      <mat-icon>add</mat-icon> Register First Ambulance
+    </button>
+  </div>
+
+  <!-- Ambulance Cards Grid -->
+  <div class="amb-grid" *ngIf="!loading && ambulances.length">
+    <mat-card class="amb-card" *ngFor="let amb of ambulances">
+
+      <!-- Status stripe -->
+      <div class="status-stripe" [style.background]="statusColor(amb.status)"></div>
+
+      <div class="card-body">
+        <!-- Top row -->
+        <div class="card-top">
+          <div class="vehicle-info">
+            <div class="vehicle-icon" [style.background]="statusBg(amb.status)">
+              <mat-icon [style.color]="statusColor(amb.status)">local_shipping</mat-icon>
+            </div>
+            <div>
+              <div class="vehicle-num">{{ amb.vehicleNumber }}</div>
+              <div class="vehicle-type">{{ amb.type | titlecase }} Life Support</div>
+            </div>
+          </div>
+          <span class="status-badge" [style.color]="statusColor(amb.status)" [style.background]="statusBg(amb.status)">
+            {{ amb.status | titlecase }}
+          </span>
+        </div>
+
+        <!-- Details -->
+        <div class="detail-list">
+          <div class="detail-item" *ngIf="amb.driver?.firstName">
+            <mat-icon>person</mat-icon>
+            <span>{{ amb.driver.firstName }} {{ amb.driver.lastName }}</span>
+          </div>
+          <div class="detail-item" *ngIf="!amb.driver?.firstName">
+            <mat-icon>person_outline</mat-icon>
+            <span class="muted">No driver assigned</span>
+          </div>
+          <div class="detail-item" *ngIf="amb.location?.address">
+            <mat-icon>location_on</mat-icon>
+            <span>{{ amb.location.address }}</span>
+          </div>
+          <div class="detail-item" *ngIf="amb.currentDispatch?.pickupAddress">
+            <mat-icon>flag</mat-icon>
+            <span>Pickup: {{ amb.currentDispatch.pickupAddress }}</span>
+          </div>
+          <div class="detail-item" *ngIf="amb.currentDispatch?.destinationAddress">
+            <mat-icon>local_hospital</mat-icon>
+            <span>→ {{ amb.currentDispatch.destinationAddress }}</span>
+          </div>
+          <div class="detail-item" *ngIf="amb.model">
+            <mat-icon>directions_car</mat-icon>
+            <span>{{ amb.model }} {{ amb.year ? '(' + amb.year + ')' : '' }}</span>
+          </div>
+        </div>
+
+        <!-- Dispatch form (inline) -->
+        <div class="dispatch-form" *ngIf="amb._dispatchOpen && amb.status === 'available'">
+          <mat-form-field appearance="outline" class="df-field">
+            <mat-label>Pickup Address</mat-label>
+            <input matInput [(ngModel)]="dispatchForm[amb._id].pickup" placeholder="Patient location">
+            <mat-icon matSuffix>location_on</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="df-field">
+            <mat-label>Destination</mat-label>
+            <input matInput [(ngModel)]="dispatchForm[amb._id].dest" placeholder="Hospital">
+            <mat-icon matSuffix>local_hospital</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="df-field">
+            <mat-label>Emergency Type</mat-label>
+            <mat-select [(ngModel)]="dispatchForm[amb._id].emergency">
+              <mat-option *ngFor="let e of emergencyTypes" [value]="e">{{ e | titlecase }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <div class="df-actions">
+            <button mat-button (click)="amb._dispatchOpen = false">Cancel</button>
+            <button mat-raised-button class="btn-dispatch-go" (click)="dispatch(amb)">
+              <mat-icon>directions_run</mat-icon> Confirm Dispatch
+            </button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card-actions">
+          <button mat-stroked-button class="btn-dispatch" *ngIf="amb.status === 'available'" (click)="openDispatch(amb)">
+            <mat-icon>{{ amb._dispatchOpen ? 'close' : 'directions_run' }}</mat-icon>
+            {{ amb._dispatchOpen ? 'Cancel' : 'Dispatch' }}
+          </button>
+          <button mat-raised-button class="btn-complete" *ngIf="amb.status === 'dispatched'" (click)="complete(amb._id)">
+            <mat-icon>check_circle</mat-icon> Complete
+          </button>
+          <button mat-stroked-button class="btn-maint" *ngIf="amb.status === 'available'" (click)="setMaintenance(amb._id)" matTooltip="Mark maintenance">
+            <mat-icon>build</mat-icon>
+          </button>
+          <button mat-icon-button class="btn-delete" *ngIf="amb.status !== 'dispatched'" (click)="deleteAmbulance(amb._id, amb.vehicleNumber)" matTooltip="Delete ambulance" color="warn">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+</div>

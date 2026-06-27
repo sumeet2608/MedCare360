@@ -1,0 +1,76 @@
+<div class="cc-page fade-in">
+  <div class="cc-hero">
+    <div class="hero-icon"><mat-icon>bolt</mat-icon></div>
+    <h1>AI Operations Hub</h1>
+    <p>Ask in plain English — the AI picks the right action and runs it against live hospital data.</p>
+
+    <div class="cc-input-row">
+      <mat-icon>chat</mat-icon>
+      <input [(ngModel)]="query" (keyup.enter)="ask()" placeholder="e.g. Show today's appointments, or find available pediatricians..." [disabled]="running">
+      <button mat-icon-button color="primary" (click)="ask()" [disabled]="running || !query.trim()">
+        <mat-spinner diameter="20" *ngIf="running"></mat-spinner>
+        <mat-icon *ngIf="!running">send</mat-icon>
+      </button>
+    </div>
+
+    <div class="suggestion-chips" *ngIf="suggestions.length">
+      <button class="sugg-chip" *ngFor="let s of suggestions" (click)="ask(s)" [disabled]="running">{{ s }}</button>
+    </div>
+  </div>
+
+  <div class="cc-history">
+    <div class="empty-state" *ngIf="!history.length">
+      <mat-icon>smart_toy</mat-icon>
+      <p>Try a quick command above to get started</p>
+    </div>
+
+    <div class="cc-entry" *ngFor="let entry of history">
+      <div class="question-row">
+        <mat-icon>person</mat-icon>
+        <span>{{ entry.question }}</span>
+      </div>
+
+      <div class="answer-card">
+        <div class="answer-loading" *ngIf="entry.loading">
+          <mat-spinner diameter="22"></mat-spinner> Thinking and querying the database...
+        </div>
+
+        <ng-container *ngIf="!entry.loading && !entry.error">
+          <div class="tool-badge" *ngIf="entry.toolUsed">
+            <mat-icon>{{ toolIcons[entry.toolUsed] || 'auto_awesome' }}</mat-icon>
+            {{ toolLabel(entry.toolUsed) }}
+          </div>
+
+          <p class="answer-text">{{ entry.answer }}</p>
+
+          <!-- Array results: render as a simple data table -->
+          <div class="data-table-wrap" *ngIf="isArrayResult(entry.toolData) && entry.toolData.length">
+            <table class="cc-table">
+              <thead>
+                <tr><th *ngFor="let k of Object.keys(entry.toolData[0])">{{ k }}</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of entry.toolData">
+                  <td *ngFor="let k of Object.keys(row)">{{ row[k] }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Object results (e.g. patient summary, insights) -->
+          <div class="data-kv" *ngIf="isObjectResult(entry.toolData)">
+            <div class="kv-row" *ngFor="let kv of objectEntries(entry.toolData)">
+              <span class="kv-key">{{ kv.key }}</span>
+              <span class="kv-val" *ngIf="!isArrayResult(kv.value)">{{ kv.value }}</span>
+              <span class="kv-val" *ngIf="isArrayResult(kv.value)">{{ kv.value.join(', ') || '—' }}</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="answer-error" *ngIf="entry.error">
+          <mat-icon>error_outline</mat-icon> {{ entry.error }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

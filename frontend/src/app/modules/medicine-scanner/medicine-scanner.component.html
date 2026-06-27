@@ -1,0 +1,135 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div>
+      <h1>Medicine Scanner</h1>
+      <p>Upload a medicine image to get educational information</p>
+    </div>
+  </div>
+
+  <div class="disclaimer-banner" style="margin-bottom:20px">
+    <strong>Educational Information Only:</strong> Medicine scan results are for educational purposes only and should NOT replace advice from a licensed pharmacist or doctor.
+    Always consult a healthcare professional before taking any medication.
+  </div>
+
+  <div class="scanner-layout">
+    <!-- Upload Panel -->
+    <mat-card class="upload-card">
+      <mat-card-header><mat-card-title><mat-icon>document_scanner</mat-icon> Upload Medicine Image</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <!-- Drop Zone -->
+        <div class="drop-zone" [class.has-preview]="previewUrl" (click)="fileInput.click()" (drop)="onDrop($event)" (dragover)="onDragOver($event)">
+          <img *ngIf="previewUrl" [src]="previewUrl" alt="Medicine preview" class="preview-img">
+          <div *ngIf="!previewUrl" class="drop-placeholder">
+            <mat-icon>add_photo_alternate</mat-icon>
+            <p>Drop medicine image here or <strong>click to browse</strong></p>
+            <span>Supports: JPG, PNG, WEBP (max 10MB)</span>
+          </div>
+        </div>
+        <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" style="display:none">
+
+        <div *ngIf="error" style="color:#f44336;margin-top:8px;font-size:0.875rem"><mat-icon style="vertical-align:middle;font-size:18px">error</mat-icon> {{ error }}</div>
+
+        <div style="display:flex;gap:12px;margin-top:16px">
+          <button mat-raised-button color="primary" (click)="scanMedicine()" [disabled]="!previewUrl || loading" style="flex:1">
+            <mat-spinner diameter="18" *ngIf="loading" style="display:inline-block;margin-right:8px"></mat-spinner>
+            <mat-icon *ngIf="!loading">document_scanner</mat-icon>
+            {{ loading ? 'Scanning...' : 'Scan Medicine' }}
+          </button>
+          <button mat-stroked-button (click)="reset()" *ngIf="previewUrl">
+            <mat-icon>refresh</mat-icon> Reset
+          </button>
+        </div>
+
+        <div class="tips-card">
+          <h4><mat-icon>tips_and_updates</mat-icon> Tips for better results</h4>
+          <ul>
+            <li>Ensure medicine name/label is clearly visible</li>
+            <li>Use good lighting, avoid shadows</li>
+            <li>Capture the front of the package/strip</li>
+            <li>Keep image in focus</li>
+          </ul>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Results Panel -->
+    <div class="results-panel">
+      <div *ngIf="!result && !loading" class="no-result">
+        <mat-icon>medication</mat-icon>
+        <p>Upload a medicine image to see information here</p>
+      </div>
+
+      <div *ngIf="loading" style="text-align:center;padding:60px">
+        <mat-spinner diameter="56"></mat-spinner>
+        <p style="margin-top:16px;color:#666" *ngIf="scanStage === 'ocr'">Running OCR text extraction...</p>
+        <p style="margin-top:16px;color:#666" *ngIf="scanStage === 'ai'">Analyzing with Groq AI vision...</p>
+      </div>
+
+      <div *ngIf="result && !loading" class="result-content fade-in">
+        <mat-card class="result-header-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <h2 style="margin:0 0 4px">{{ result.medicineName }}</h2>
+              <p style="color:#666;margin:0">{{ result.genericName }}</p>
+              <p style="color:#888;font-size:0.875rem" *ngIf="result.brand">Brand: {{ result.brand }}</p>
+            </div>
+            <span [style.background]="getConfidenceColor(result.confidence) + '22'" [style.color]="getConfidenceColor(result.confidence)" style="padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;text-transform:uppercase">
+              {{ result.confidence }} confidence
+            </span>
+          </div>
+          <mat-chip-listbox style="margin-top:12px">
+            <mat-chip *ngIf="result.category">{{ result.category }}</mat-chip>
+          </mat-chip-listbox>
+
+          <div class="verify-badge verified">
+            <mat-icon>smart_toy</mat-icon>
+            <span>Analyzed by Groq AI vision from the image</span>
+          </div>
+        </mat-card>
+
+        <mat-expansion-panel class="ocr-panel" *ngIf="ocrText">
+          <mat-expansion-panel-header><mat-panel-title><mat-icon>text_snippet</mat-icon> Raw OCR Text Extracted</mat-panel-title></mat-expansion-panel-header>
+          <p class="ocr-raw">{{ ocrText }}</p>
+        </mat-expansion-panel>
+
+        <mat-accordion>
+          <mat-expansion-panel *ngIf="result.activeIngredients?.length">
+            <mat-expansion-panel-header><mat-panel-title><mat-icon>science</mat-icon> Active Ingredients</mat-panel-title></mat-expansion-panel-header>
+            <ul><li *ngFor="let i of result.activeIngredients">{{ i }}</li></ul>
+          </mat-expansion-panel>
+
+          <mat-expansion-panel expanded>
+            <mat-expansion-panel-header><mat-panel-title><mat-icon>medical_information</mat-icon> Common Uses</mat-panel-title></mat-expansion-panel-header>
+            <ul><li *ngFor="let u of result.commonUses">{{ u }}</li></ul>
+          </mat-expansion-panel>
+
+          <mat-expansion-panel>
+            <mat-expansion-panel-header><mat-panel-title><mat-icon>warning</mat-icon> Side Effects</mat-panel-title></mat-expansion-panel-header>
+            <ul><li *ngFor="let s of result.sideEffects">{{ s }}</li></ul>
+          </mat-expansion-panel>
+
+          <mat-expansion-panel>
+            <mat-expansion-panel-header><mat-panel-title><mat-icon>shield</mat-icon> Precautions</mat-panel-title></mat-expansion-panel-header>
+            <ul><li *ngFor="let p of result.precautions">{{ p }}</li></ul>
+          </mat-expansion-panel>
+
+          <mat-expansion-panel *ngIf="result.storageInstructions">
+            <mat-expansion-panel-header><mat-panel-title><mat-icon>inventory</mat-icon> Storage Instructions</mat-panel-title></mat-expansion-panel-header>
+            <p>{{ result.storageInstructions }}</p>
+          </mat-expansion-panel>
+
+          <mat-expansion-panel *ngIf="result.dosageInfo">
+            <mat-expansion-panel-header><mat-panel-title><mat-icon>schedule</mat-icon> Dosage Information</mat-panel-title></mat-expansion-panel-header>
+            <p>{{ result.dosageInfo }}</p>
+          </mat-expansion-panel>
+
+        </mat-accordion>
+
+        <div class="final-disclaimer" style="margin-top:16px">
+          <mat-icon>info</mat-icon>
+          <p>{{ result.disclaimer }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

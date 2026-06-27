@@ -1,0 +1,53 @@
+<div class="compare-page fade-in">
+  <button mat-button class="back-btn" (click)="goBack()"><mat-icon>arrow_back</mat-icon> Back to Pharmacy</button>
+
+  <div class="page-header">
+    <div><h1>Compare Medicines</h1><p>Add up to 4 medicines to compare side by side</p></div>
+  </div>
+
+  <div class="add-bar glass-card">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search medicine to add</mat-label>
+      <input matInput [value]="searchTerm" (keyup)="searchToAdd($any($event.target).value)" placeholder="Type a medicine name..." [disabled]="medicines.length >= 4">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+    <div class="search-results" *ngIf="searchResults.length">
+      <div class="result-item" *ngFor="let m of searchResults" (click)="addMedicine(m)">
+        <span class="r-name">{{ m.name }}</span>
+        <span class="r-generic">{{ m.genericName }}</span>
+        <mat-icon>add_circle</mat-icon>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading"><mat-spinner diameter="40"></mat-spinner></div>
+
+  <div class="empty-state" *ngIf="!loading && medicines.length === 0">
+    <mat-icon>compare_arrows</mat-icon>
+    <h3>No medicines selected</h3>
+    <p>Search above to add medicines to your comparison.</p>
+  </div>
+
+  <div class="compare-table-wrap" *ngIf="!loading && medicines.length > 0">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th class="row-label-col"></th>
+          <th *ngFor="let m of medicines">
+            <div class="med-col-header">
+              <button mat-icon-button class="remove-btn" (click)="removeMedicine(m._id)"><mat-icon>close</mat-icon></button>
+              <strong>{{ m.name }}</strong>
+              <span>{{ m.genericName }}</span>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of rows">
+          <td class="row-label">{{ row.label }}</td>
+          <td *ngFor="let m of medicines">{{ cellValue(m, row) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

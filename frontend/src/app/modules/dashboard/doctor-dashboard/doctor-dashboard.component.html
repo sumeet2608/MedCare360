@@ -1,0 +1,64 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Doctor Dashboard</h1><p>Your schedule for today</p></div>
+    <button mat-raised-button color="primary" routerLink="/appointments"><mat-icon>calendar_today</mat-icon> All Appointments</button>
+  </div>
+
+  <div class="stats-grid">
+    <mat-card class="stat-card">
+      <div class="stat-row">
+        <div><div class="stat-value">{{ todayAppointments.length }}</div><div class="stat-label">Today's Patients</div></div>
+        <div class="stat-icon" style="background:var(--primary-light)"><mat-icon style="color:var(--primary)">people</mat-icon></div>
+      </div>
+    </mat-card>
+    <mat-card class="stat-card">
+      <div class="stat-row">
+        <div><div class="stat-value">{{ completedCount }}</div><div class="stat-label">Completed</div></div>
+        <div class="stat-icon" style="background:var(--accent-light)"><mat-icon style="color:var(--accent)">check_circle</mat-icon></div>
+      </div>
+    </mat-card>
+  </div>
+
+  <mat-card>
+    <mat-card-header><mat-card-title>Today's Appointment Queue</mat-card-title></mat-card-header>
+    <mat-card-content>
+      <div *ngIf="loading" style="text-align:center;padding:40px"><mat-spinner diameter="40"></mat-spinner></div>
+      <div *ngIf="!loading && todayAppointments.length === 0" class="empty-state">
+        <mat-icon>event_available</mat-icon>
+        <p>No appointments scheduled for today</p>
+      </div>
+      <mat-list *ngIf="!loading && todayAppointments.length > 0">
+        <mat-list-item *ngFor="let apt of todayAppointments" style="border-bottom:1px solid #f0f0f0">
+          <div mat-list-icon class="queue-avatar">{{ apt.patient?.user?.firstName?.[0] }}</div>
+          <div mat-line>{{ apt.patient?.user?.firstName }} {{ apt.patient?.user?.lastName }}</div>
+          <div mat-line style="color:#666;font-size:0.8rem">{{ apt.appointmentTime }} · {{ apt.type | titlecase }}</div>
+          <span class="status-chip" [class]="getStatusClass(apt.status)">{{ apt.status }}</span>
+          <button mat-icon-button [routerLink]="['/appointments', apt._id]"><mat-icon>chevron_right</mat-icon></button>
+        </mat-list-item>
+      </mat-list>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="quick-actions-card" style="margin-top:16px">
+    <mat-card>
+      <mat-card-header><mat-card-title>Quick Actions</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:8px">
+          <button mat-stroked-button routerLink="/patients"><mat-icon>people</mat-icon> My Patients</button>
+          <button mat-stroked-button routerLink="/ai-assistant" color="primary"><mat-icon>smart_toy</mat-icon> AI Assistant</button>
+          <button mat-stroked-button routerLink="/emergency" color="warn"><mat-icon>emergency</mat-icon> Emergency Guide</button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
+
+<style>
+.stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:20px; }
+.stat-row { display:flex; justify-content:space-between; align-items:center; }
+.stat-value { font-size:1.8rem; font-weight:700; }
+.stat-label { font-size:0.8rem; color:#666; }
+.stat-icon { width:52px; height:52px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+.empty-state { text-align:center; padding:48px; color:#bbb; mat-icon { font-size:64px; width:64px; height:64px; display:block; margin:0 auto 12px; } }
+.queue-avatar { width:36px; height:36px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; }
+</style>

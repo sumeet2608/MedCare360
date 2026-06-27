@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medcare-config
+  namespace: medcare360
+data:
+  NODE_ENV: "production"
+  PORT: "5000"
+  JWT_EXPIRE: "30d"
+  FRONTEND_URL: "https://medcare360.com"
+  SMTP_HOST: "smtp.gmail.com"
+  SMTP_PORT: "587"
+  FROM_EMAIL: "noreply@medcare360.com"

@@ -1,0 +1,79 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Patient Management</h1><p>{{ totalPatients }} total patients registered</p></div>
+    <button mat-raised-button color="primary" routerLink="/patients/new"><mat-icon>person_add</mat-icon> Register Patient</button>
+  </div>
+
+  <!-- Magic MCP Stats Row (21st.dev Stats Card pattern) -->
+  <div class="magic-stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+    <div class="magic-stats-card">
+      <div class="msc2-header">
+        <span class="msc2-title">Total Patients</span>
+        <div class="msc2-icon" style="background:#dbeafe"><mat-icon style="color:#1d4ed8">people</mat-icon></div>
+      </div>
+      <div class="msc2-value">{{ totalPatients }}</div>
+      <div class="msc2-change positive"><mat-icon>arrow_upward</mat-icon> +12% from last month</div>
+    </div>
+    <div class="magic-stats-card">
+      <div class="msc2-header">
+        <span class="msc2-title">Admitted</span>
+        <div class="msc2-icon" style="background:#fef3c7"><mat-icon style="color:#b45309">hotel</mat-icon></div>
+      </div>
+      <div class="msc2-value">{{ admittedCount }}</div>
+      <div class="msc2-change neutral"><mat-icon>remove</mat-icon> currently admitted</div>
+    </div>
+    <div class="magic-stats-card">
+      <div class="msc2-header">
+        <span class="msc2-title">Outpatients</span>
+        <div class="msc2-icon" style="background:#d1fae5"><mat-icon style="color:#059669">person</mat-icon></div>
+      </div>
+      <div class="msc2-value">{{ outpatientCount }}</div>
+      <div class="msc2-change positive"><mat-icon>arrow_upward</mat-icon> actively registered</div>
+    </div>
+    <div class="magic-stats-card">
+      <div class="msc2-header">
+        <span class="msc2-title">Loaded</span>
+        <div class="msc2-icon" style="background:#ede9fe"><mat-icon style="color:#7c3aed">download_done</mat-icon></div>
+      </div>
+      <div class="msc2-value">{{ patients.length }}</div>
+      <div class="msc2-change neutral"><mat-icon>info</mat-icon> records in view</div>
+    </div>
+  </div>
+
+  <app-data-grid
+    [columns]="columns"
+    [rows]="patients"
+    [loading]="loading"
+    searchPlaceholder="Search name, ID, email..."
+    exportFilename="patients"
+    emptyMessage="No patients found">
+
+    <ng-template appGridCell="patientId" let-p><span class="id-chip">{{ p.patientId }}</span></ng-template>
+
+    <ng-template appGridCell="fullName" let-p>
+      <div class="patient-name">
+        <div class="avatar-sm">{{ p.user?.firstName?.[0] }}</div>
+        <div>
+          <div class="name">{{ p.user?.firstName }} {{ p.user?.lastName }}</div>
+          <div class="email">{{ p.user?.email }}</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template appGridCell="gender" let-p>{{ p.gender | titlecase }}</ng-template>
+    <ng-template appGridCell="bloodGroup" let-p><span class="blood-chip">{{ p.bloodGroup || 'N/A' }}</span></ng-template>
+    <ng-template appGridCell="phone" let-p>{{ p.phone || '—' }}</ng-template>
+
+    <ng-template appGridCell="status" let-p>
+      <span class="status-chip" [class]="p.isAdmitted ? 'pending' : 'active'">
+        {{ p.isAdmitted ? 'Admitted' : 'Outpatient' }}
+      </span>
+    </ng-template>
+
+    <ng-template appGridCell="actions" let-p>
+      <button mat-icon-button matTooltip="View" (click)="$event.stopPropagation(); viewPatient(p._id)"><mat-icon>visibility</mat-icon></button>
+      <button mat-icon-button matTooltip="Edit" (click)="$event.stopPropagation(); editPatient(p._id)"><mat-icon>edit</mat-icon></button>
+      <button mat-icon-button matTooltip="Delete" color="warn" (click)="$event.stopPropagation(); deletePatient(p._id)"><mat-icon>delete</mat-icon></button>
+    </ng-template>
+  </app-data-grid>
+</div>

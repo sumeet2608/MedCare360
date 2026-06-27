@@ -1,0 +1,122 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div>
+      <h1>{{ isEdit ? 'Edit Patient' : 'Register New Patient' }}</h1>
+      <p>{{ isEdit ? 'Update patient information' : 'Fill in all required fields to register a patient' }}</p>
+    </div>
+    <button mat-stroked-button routerLink="/patients"><mat-icon>arrow_back</mat-icon> Back</button>
+  </div>
+
+  <div *ngIf="loading" style="text-align:center;padding:60px"><mat-spinner diameter="48"></mat-spinner></div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!loading">
+    <mat-stepper [linear]="false" #stepper class="wizard-stepper">
+
+      <mat-step label="Personal Info">
+        <div class="step-content">
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>First Name *</mat-label>
+              <input matInput formControlName="firstName">
+              <mat-error>Required</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Last Name *</mat-label>
+              <input matInput formControlName="lastName">
+              <mat-error>Required</mat-error>
+            </mat-form-field>
+          </div>
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Email *</mat-label>
+              <input matInput type="email" formControlName="email">
+              <mat-icon matPrefix>email</mat-icon>
+              <mat-error>Valid email required</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Phone</mat-label>
+              <input matInput formControlName="phone">
+              <mat-icon matPrefix>phone</mat-icon>
+            </mat-form-field>
+          </div>
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Date of Birth *</mat-label>
+              <input matInput [matDatepicker]="dob" formControlName="dateOfBirth">
+              <mat-datepicker-toggle matSuffix [for]="dob"></mat-datepicker-toggle>
+              <mat-datepicker #dob></mat-datepicker>
+              <mat-error>Required</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Gender *</mat-label>
+              <mat-select formControlName="gender">
+                <mat-option *ngFor="let g of genders" [value]="g">{{ g | titlecase }}</mat-option>
+              </mat-select>
+              <mat-error>Required</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Blood Group</mat-label>
+              <mat-select formControlName="bloodGroup">
+                <mat-option *ngFor="let bg of bloodGroups" [value]="bg">{{ bg }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <mat-form-field appearance="outline" style="width:100%">
+            <mat-label>Chronic Conditions (comma-separated)</mat-label>
+            <input matInput formControlName="chronicConditions" placeholder="e.g. Diabetes, Hypertension">
+            <mat-icon matPrefix>medical_information</mat-icon>
+          </mat-form-field>
+          <div class="step-nav"><button mat-raised-button color="primary" type="button" matStepperNext>Next: Address <mat-icon>arrow_forward</mat-icon></button></div>
+        </div>
+      </mat-step>
+
+      <mat-step label="Address">
+        <div class="step-content">
+          <mat-form-field appearance="outline" style="width:100%">
+            <mat-label>Street Address</mat-label>
+            <input matInput formControlName="street">
+          </mat-form-field>
+          <div class="form-row-3">
+            <mat-form-field appearance="outline"><mat-label>City</mat-label><input matInput formControlName="city"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>State</mat-label><input matInput formControlName="state"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>ZIP Code</mat-label><input matInput formControlName="zipCode"></mat-form-field>
+          </div>
+          <div class="step-nav">
+            <button mat-stroked-button type="button" matStepperPrevious><mat-icon>arrow_back</mat-icon> Back</button>
+            <button mat-raised-button color="primary" type="button" matStepperNext>Next: Emergency Contact <mat-icon>arrow_forward</mat-icon></button>
+          </div>
+        </div>
+      </mat-step>
+
+      <mat-step label="Emergency Contact">
+        <div class="step-content">
+          <div class="form-row-3">
+            <mat-form-field appearance="outline"><mat-label>Contact Name</mat-label><input matInput formControlName="emergencyName"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Relationship</mat-label><input matInput formControlName="emergencyRelationship"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Phone</mat-label><input matInput formControlName="emergencyPhone"></mat-form-field>
+          </div>
+          <div class="step-nav">
+            <button mat-stroked-button type="button" matStepperPrevious><mat-icon>arrow_back</mat-icon> Back</button>
+            <button mat-raised-button color="primary" type="button" matStepperNext>Next: Insurance <mat-icon>arrow_forward</mat-icon></button>
+          </div>
+        </div>
+      </mat-step>
+
+      <mat-step label="Insurance">
+        <div class="step-content">
+          <div class="form-row">
+            <mat-form-field appearance="outline"><mat-label>Insurance Provider</mat-label><input matInput formControlName="insuranceProvider"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Policy Number</mat-label><input matInput formControlName="insurancePolicyNumber"></mat-form-field>
+          </div>
+          <div class="step-nav">
+            <button mat-stroked-button type="button" matStepperPrevious><mat-icon>arrow_back</mat-icon> Back</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="saving">
+              <mat-spinner diameter="18" *ngIf="saving"></mat-spinner>
+              <span *ngIf="!saving"><mat-icon>save</mat-icon> {{ isEdit ? 'Update Patient' : 'Register Patient' }}</span>
+            </button>
+          </div>
+        </div>
+      </mat-step>
+    </mat-stepper>
+  </form>
+</div>

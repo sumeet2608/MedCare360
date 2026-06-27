@@ -1,0 +1,90 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Pharmacy Management</h1><p>{{ total }} medicines in inventory</p></div>
+    <div style="display:flex;gap:10px">
+      <button mat-stroked-button routerLink="/pharmacy/search"><mat-icon>travel_explore</mat-icon> Medicine Search</button>
+      <button mat-stroked-button routerLink="/pharmacy/compare"><mat-icon>compare_arrows</mat-icon> Compare</button>
+      <button mat-raised-button color="primary" routerLink="/pharmacy/new"><mat-icon>add</mat-icon> Add Medicine</button>
+    </div>
+  </div>
+
+  <div class="alert-bar" *ngIf="showLowStock">
+    <mat-icon>warning</mat-icon> Showing low stock medicines only
+    <button mat-button (click)="showLowStock=false;load()">Show All</button>
+  </div>
+  <div class="alert-bar expiring" *ngIf="showExpiring">
+    <mat-icon>schedule</mat-icon> Showing medicines expiring within 30 days
+    <button mat-button (click)="showExpiring=false;load()">Show All</button>
+  </div>
+
+  <mat-card class="table-container">
+    <div style="display:flex;gap:12px;padding:16px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;align-items:center">
+      <mat-form-field appearance="outline" style="width:280px;margin-bottom:-1.25em">
+        <mat-label>Search medicines</mat-label>
+        <input matInput (keyup)="applyFilter($event)" placeholder="Name, brand, generic...">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+      <button mat-stroked-button color="warn" (click)="showLowStock=true;showExpiring=false;load()"><mat-icon>warning</mat-icon> Low Stock</button>
+      <button mat-stroked-button color="accent" (click)="showExpiring=true;showLowStock=false;load()"><mat-icon>schedule</mat-icon> Expiring Soon</button>
+      <button mat-stroked-button (click)="showLowStock=false;showExpiring=false;load()"><mat-icon>refresh</mat-icon></button>
+    </div>
+
+    <div *ngIf="loading" style="text-align:center;padding:60px"><mat-spinner diameter="48"></mat-spinner></div>
+
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+    <mat-table [dataSource]="dataSource" matSort *ngIf="!loading" style="min-width:800px">
+      <ng-container matColumnDef="medicineId">
+        <mat-header-cell *matHeaderCellDef>ID</mat-header-cell>
+        <mat-cell *matCellDef="let m"><span style="font-size:0.72rem;font-weight:600;color:var(--primary)">{{ m.medicineId }}</span></mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="name">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Medicine</mat-header-cell>
+        <mat-cell *matCellDef="let m">
+          <div><div style="font-weight:500">{{ m.name }}</div><div style="font-size:0.75rem;color:#666">{{ m.genericName }}</div></div>
+        </mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="category">
+        <mat-header-cell *matHeaderCellDef>Category</mat-header-cell>
+        <mat-cell *matCellDef="let m">{{ m.category | titlecase }}</mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="type">
+        <mat-header-cell *matHeaderCellDef>Type</mat-header-cell>
+        <mat-cell *matCellDef="let m">{{ m.type | titlecase }}</mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="quantity">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Qty</mat-header-cell>
+        <mat-cell *matCellDef="let m"><strong [style.color]="m.quantity <= m.minStockLevel ? '#f44336' : '#2e7d32'">{{ m.quantity }}</strong></mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="expiryDate">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Expiry</mat-header-cell>
+        <mat-cell *matCellDef="let m" [style.color]="m.isExpired ? '#f44336' : m.isExpiringSoon ? '#ff9800' : 'inherit'">{{ m.expiryDate | date:'mediumDate' }}</mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="price">
+        <mat-header-cell *matHeaderCellDef>Price</mat-header-cell>
+        <mat-cell *matCellDef="let m">₹{{ m.sellingPrice }}</mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="stockStatus">
+        <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+        <mat-cell *matCellDef="let m"><span class="status-chip" [class]="getStockClass(m)">{{ getStockLabel(m) }}</span></mat-cell>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+        <mat-cell *matCellDef="let m">
+          <button mat-icon-button matTooltip="View Details" [routerLink]="['/pharmacy', m._id]"><mat-icon>visibility</mat-icon></button>
+          <button mat-icon-button matTooltip="Add Stock" (click)="updateStock(m._id,'add')"><mat-icon style="color:#4caf50">add_circle</mat-icon></button>
+          <button mat-icon-button matTooltip="Dispense" (click)="updateStock(m._id,'remove')"><mat-icon style="color:#ff9800">remove_circle</mat-icon></button>
+          <button mat-icon-button matTooltip="Edit" [routerLink]="['/pharmacy', m._id, 'edit']"><mat-icon>edit</mat-icon></button>
+        </mat-cell>
+      </ng-container>
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let r; columns: displayedColumns"></mat-row>
+    </mat-table>
+    </div>
+    <mat-paginator [pageSizeOptions]="[10,20,50]" showFirstLastButtons></mat-paginator>
+  </mat-card>
+</div>
+
+<style>
+.alert-bar { display:flex;align-items:center;gap:8px;padding:10px 16px;background:#fff3e0;border-left:4px solid #ff9800;border-radius:0 8px 8px 0;margin-bottom:12px;font-size:0.875rem; }
+.alert-bar.expiring { background:#fff8e1;border-color:#ffc107; }
+</style>

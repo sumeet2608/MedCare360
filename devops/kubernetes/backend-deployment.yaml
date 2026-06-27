@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medcare-backend
+  namespace: medcare360
+  labels:
+    app: medcare-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: medcare-backend
+  template:
+    metadata:
+      labels:
+        app: medcare-backend
+    spec:
+      containers:
+        - name: backend
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360-backend:latest
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: medcare-config
+            - secretRef:
+                name: medcare-secrets
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: medcare-uploads-pvc
+        - name: logs
+          persistentVolumeClaim:
+            claimName: medcare-logs-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: medcare-uploads-pvc
+  namespace: medcare360
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: medcare-logs-pvc
+  namespace: medcare360
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medcare-backend-svc
+  namespace: medcare360
+spec:
+  selector:
+    app: medcare-backend
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP

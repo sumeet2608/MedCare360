@@ -1,0 +1,118 @@
+<div class="fade-in emr-page">
+  <div class="page-header">
+    <div>
+      <h1><mat-icon class="title-icon">folder_shared</mat-icon> Electronic Medical Records</h1>
+      <p>Comprehensive patient medical history, SOAP notes, prescriptions and clinical timelines</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button (click)="newSOAP()"><mat-icon>note_add</mat-icon> New SOAP Note</button>
+      <button mat-raised-button color="primary" (click)="newPrescription()"><mat-icon>medication</mat-icon> New Prescription</button>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-grid">
+    <mat-card class="stat-card">
+      <mat-icon style="color:#0891b2">folder_open</mat-icon>
+      <div class="stat-val">{{ stats.records }}</div>
+      <div class="stat-lbl">Medical Records</div>
+    </mat-card>
+    <mat-card class="stat-card">
+      <mat-icon style="color:#7c3aed">medication</mat-icon>
+      <div class="stat-val">{{ stats.prescriptions }}</div>
+      <div class="stat-lbl">Prescriptions</div>
+    </mat-card>
+    <mat-card class="stat-card">
+      <mat-icon style="color:#059669">assignment</mat-icon>
+      <div class="stat-val">{{ stats.notes }}</div>
+      <div class="stat-lbl">SOAP Notes</div>
+    </mat-card>
+    <mat-card class="stat-card">
+      <mat-icon style="color:#d97706">people</mat-icon>
+      <div class="stat-val">{{ patients.length }}</div>
+      <div class="stat-lbl">Patients</div>
+    </mat-card>
+  </div>
+
+  <!-- Patient Search + Timeline Access -->
+  <mat-card class="search-card">
+    <h3><mat-icon>search</mat-icon> Patient Clinical Timeline</h3>
+    <p>Search for a patient to view their complete clinical history</p>
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <mat-icon>person_search</mat-icon>
+        <input class="patient-search" [(ngModel)]="searchQuery" (ngModelChange)="filterPatients()"
+               placeholder="Search patient by name or ID...">
+      </div>
+    </div>
+    <div class="patient-list" *ngIf="searchQuery && filteredPatients.length > 0">
+      <div class="patient-row" *ngFor="let p of filteredPatients | slice:0:8" (click)="viewTimeline(p._id)">
+        <div class="patient-avatar">{{ (p.fullName || 'U')[0].toUpperCase() }}</div>
+        <div>
+          <div class="patient-name">{{ p.fullName }}</div>
+          <div class="patient-meta">{{ p.patientId }} · {{ p.gender || 'Unknown' }} · {{ p.bloodGroup || '' }}</div>
+        </div>
+        <button mat-icon-button matTooltip="View Timeline"><mat-icon>timeline</mat-icon></button>
+      </div>
+    </div>
+    <div class="no-patients" *ngIf="searchQuery && filteredPatients.length === 0">
+      <mat-icon>person_off</mat-icon><span>No patients found for "{{ searchQuery }}"</span>
+    </div>
+  </mat-card>
+
+  <!-- Recent Activity -->
+  <div class="recent-grid" *ngIf="!loading">
+    <!-- Recent SOAP Notes -->
+    <mat-card class="recent-card">
+      <div class="card-header">
+        <mat-icon style="color:#059669">assignment</mat-icon>
+        <h4>Recent SOAP Notes</h4>
+      </div>
+      <div class="empty-state" *ngIf="recentNotes.length === 0">
+        <mat-icon>note</mat-icon><p>No SOAP notes yet</p>
+        <button mat-stroked-button (click)="newSOAP()">Create First Note</button>
+      </div>
+      <div class="recent-item" *ngFor="let note of recentNotes" (click)="viewNote(note._id)">
+        <div class="item-icon soap"><mat-icon>assignment</mat-icon></div>
+        <div class="item-body">
+          <div class="item-title">{{ patientName(note) }}</div>
+          <div class="item-sub">{{ note.subjective?.chiefComplaint || 'SOAP Note' }}</div>
+          <div class="item-meta">
+            <span class="status-badge" [class]="note.status">{{ note.status }}</span>
+            {{ note.encounterDate | date:'dd MMM yyyy' }} · {{ doctorName(note) }}
+          </div>
+        </div>
+        <mat-icon class="chevron">chevron_right</mat-icon>
+      </div>
+    </mat-card>
+
+    <!-- Recent Prescriptions -->
+    <mat-card class="recent-card">
+      <div class="card-header">
+        <mat-icon style="color:#7c3aed">medication</mat-icon>
+        <h4>Recent Prescriptions</h4>
+      </div>
+      <div class="empty-state" *ngIf="recentPrescriptions.length === 0">
+        <mat-icon>medication</mat-icon><p>No prescriptions yet</p>
+        <button mat-stroked-button (click)="newPrescription()">Create Prescription</button>
+      </div>
+      <div class="recent-item" *ngFor="let rx of recentPrescriptions" (click)="viewPrescription(rx._id)">
+        <div class="item-icon rx"><mat-icon>local_pharmacy</mat-icon></div>
+        <div class="item-body">
+          <div class="item-title">{{ patientName(rx) }}</div>
+          <div class="item-sub">{{ rx.medications?.length || 0 }} medication(s) · {{ rx.diagnosis || 'No diagnosis' }}</div>
+          <div class="item-meta">
+            <span class="status-badge" [class]="rx.status">{{ rx.status }}</span>
+            {{ rx.createdAt | date:'dd MMM yyyy' }} · {{ doctorName(rx) }}
+          </div>
+        </div>
+        <mat-icon class="chevron">chevron_right</mat-icon>
+      </div>
+    </mat-card>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading EMR data...</p>
+  </div>
+</div>

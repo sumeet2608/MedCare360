@@ -1,0 +1,462 @@
+---
+# ── Patient Service ─────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-service
+  namespace: medcare360
+  labels: { app: patient-service, tier: clinical }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: patient-service }
+  template:
+    metadata:
+      labels: { app: patient-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3002"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: patient-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/patient-service:latest
+          ports:
+            - containerPort: 3002
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3002"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3002 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /health, port: 3002 }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patient-service
+  namespace: medcare360
+spec:
+  selector: { app: patient-service }
+  ports:
+    - port: 3002
+      targetPort: 3002
+  type: ClusterIP
+---
+# ── Doctor Service ──────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doctor-service
+  namespace: medcare360
+  labels: { app: doctor-service, tier: clinical }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: doctor-service }
+  template:
+    metadata:
+      labels: { app: doctor-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3003"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: doctor-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/doctor-service:latest
+          ports:
+            - containerPort: 3003
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3003"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3003 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /health, port: 3003 }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doctor-service
+  namespace: medcare360
+spec:
+  selector: { app: doctor-service }
+  ports:
+    - port: 3003
+      targetPort: 3003
+  type: ClusterIP
+---
+# ── Appointment Service ─────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+  namespace: medcare360
+  labels: { app: appointment-service, tier: clinical }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: appointment-service }
+  template:
+    metadata:
+      labels: { app: appointment-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3004"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: appointment-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/appointment-service:latest
+          ports:
+            - containerPort: 3004
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3004"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3004 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /health, port: 3004 }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-service
+  namespace: medcare360
+spec:
+  selector: { app: appointment-service }
+  ports:
+    - port: 3004
+      targetPort: 3004
+  type: ClusterIP
+---
+# ── Pharmacy Service ────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pharmacy-service
+  namespace: medcare360
+  labels: { app: pharmacy-service, tier: clinical }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: pharmacy-service }
+  template:
+    metadata:
+      labels: { app: pharmacy-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3005"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: pharmacy-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/pharmacy-service:latest
+          ports:
+            - containerPort: 3005
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3005"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3005 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pharmacy-service
+  namespace: medcare360
+spec:
+  selector: { app: pharmacy-service }
+  ports:
+    - port: 3005
+      targetPort: 3005
+  type: ClusterIP
+---
+# ── Billing Service ─────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+  namespace: medcare360
+  labels: { app: billing-service, tier: finance }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: billing-service }
+  template:
+    metadata:
+      labels: { app: billing-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3006"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: billing-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/billing-service:latest
+          ports:
+            - containerPort: 3006
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3006"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3006 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-service
+  namespace: medcare360
+spec:
+  selector: { app: billing-service }
+  ports:
+    - port: 3006
+      targetPort: 3006
+  type: ClusterIP
+---
+# ── Lab Service ─────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab-service
+  namespace: medcare360
+  labels: { app: lab-service, tier: clinical }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: lab-service }
+  template:
+    metadata:
+      labels: { app: lab-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3007"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: lab-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/lab-service:latest
+          ports:
+            - containerPort: 3007
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3007"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3007 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab-service
+  namespace: medcare360
+spec:
+  selector: { app: lab-service }
+  ports:
+    - port: 3007
+      targetPort: 3007
+  type: ClusterIP
+---
+# ── Ambulance Service ───────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ambulance-service
+  namespace: medcare360
+  labels: { app: ambulance-service, tier: emergency }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: ambulance-service }
+  template:
+    metadata:
+      labels: { app: ambulance-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3008"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: ambulance-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/ambulance-service:latest
+          ports:
+            - containerPort: 3008
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3008"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3008 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ambulance-service
+  namespace: medcare360
+spec:
+  selector: { app: ambulance-service }
+  ports:
+    - port: 3008
+      targetPort: 3008
+  type: ClusterIP
+---
+# ── Analytics Service ───────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: medcare360
+  labels: { app: analytics-service, tier: support }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: analytics-service }
+  template:
+    metadata:
+      labels: { app: analytics-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3011"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: analytics-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/analytics-service:latest
+          ports:
+            - containerPort: 3011
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3011"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3011 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-service
+  namespace: medcare360
+spec:
+  selector: { app: analytics-service }
+  ports:
+    - port: 3011
+      targetPort: 3011
+  type: ClusterIP
+---
+# ── Inventory Service ───────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+  namespace: medcare360
+  labels: { app: inventory-service, tier: support }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: inventory-service }
+  template:
+    metadata:
+      labels: { app: inventory-service }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3012"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: inventory-service
+          image: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/medcare360/inventory-service:latest
+          ports:
+            - containerPort: 3012
+          envFrom:
+            - configMapRef: { name: medcare-config }
+            - secretRef:    { name: medcare-secrets }
+          env:
+            - name: PORT
+              value: "3012"
+          resources:
+            requests: { memory: "128Mi", cpu: "100m" }
+            limits:   { memory: "256Mi", cpu: "300m" }
+          livenessProbe:
+            httpGet: { path: /health, port: 3012 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service
+  namespace: medcare360
+spec:
+  selector: { app: inventory-service }
+  ports:
+    - port: 3012
+      targetPort: 3012
+  type: ClusterIP

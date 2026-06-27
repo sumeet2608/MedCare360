@@ -1,0 +1,68 @@
+<div class="ai-page fade-in">
+  <div class="ai-header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="ai-avatar"><mat-icon>smart_toy</mat-icon></div>
+      <div>
+        <h1>MedCare AI Assistant</h1>
+        <span class="online-badge"><span class="dot"></span>Online</span>
+      </div>
+    </div>
+    <button mat-stroked-button (click)="clearChat()" *ngIf="messages.length > 0"><mat-icon>refresh</mat-icon> New Chat</button>
+  </div>
+
+  <div class="disclaimer-banner" style="margin-bottom:16px">
+    <strong>Educational Use Only:</strong> This AI provides healthcare information only. It does NOT diagnose, prescribe, or replace medical professionals.
+    For emergencies, call <strong>108/112</strong> immediately.
+  </div>
+
+  <div class="chat-container">
+    <div class="chat-messages" #messageList>
+
+      <!-- Welcome Screen -->
+      <div *ngIf="showWelcome" class="welcome-screen">
+        <mat-icon class="welcome-icon">smart_toy</mat-icon>
+        <h2>How can I help you today?</h2>
+        <p>Ask me about healthcare, symptoms, first aid, medicines, and wellness tips.</p>
+        <div class="suggested-grid">
+          <button mat-stroked-button *ngFor="let q of suggestedQuestions" (click)="sendMessage(q)" class="suggestion-btn">
+            {{ q }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div *ngFor="let msg of messages" class="message-wrapper" [class.user-wrapper]="msg.role === 'user'">
+        <div *ngIf="msg.role === 'assistant'" class="bot-avatar"><mat-icon>smart_toy</mat-icon></div>
+        <div class="message-bubble" [class.user]="msg.role === 'user'" [class.assistant]="msg.role === 'assistant'">
+          <div [innerHTML]="msg.content.replace('\n', '<br>')"></div>
+          <div class="msg-time">{{ msg.timestamp | date:'shortTime' }}</div>
+        </div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div *ngIf="loading" class="message-wrapper">
+        <div class="bot-avatar"><mat-icon>smart_toy</mat-icon></div>
+        <div class="message-bubble assistant typing">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-area">
+      <mat-form-field appearance="outline" class="input-field">
+        <input matInput [(ngModel)]="inputMessage" (keydown)="onKeyDown($event)"
+               placeholder="Ask a healthcare question..." [disabled]="loading" autocomplete="off">
+        <mat-icon matPrefix>chat</mat-icon>
+      </mat-form-field>
+      <button mat-fab color="primary" (click)="sendMessage()" [disabled]="!inputMessage.trim() || loading" class="send-btn">
+        <mat-icon>send</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="scope-note">
+    <mat-icon>info</mat-icon>
+    <span>MedCare AI only answers: disease info · first aid · medicine education · symptom awareness · preventive care · hospital guidance</span>
+  </div>
+</div>

@@ -1,0 +1,81 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div>
+      <h1>Welcome, {{ auth.currentUser?.firstName }}!</h1>
+      <p>Manage your health journey with MedCare 360</p>
+    </div>
+    <button mat-raised-button color="primary" routerLink="/appointments/new">
+      <mat-icon>calendar_today</mat-icon> Book Appointment
+    </button>
+  </div>
+
+  <div class="patient-grid">
+    <mat-card class="action-card" routerLink="/appointments">
+      <mat-icon style="color:var(--primary);font-size:40px;width:40px;height:40px">calendar_today</mat-icon>
+      <h3>My Appointments</h3>
+      <p>View & manage appointments</p>
+    </mat-card>
+    <mat-card class="action-card" routerLink="/billing">
+      <mat-icon style="color:var(--accent);font-size:40px;width:40px;height:40px">receipt_long</mat-icon>
+      <h3>My Bills</h3>
+      <p>View invoices & payments</p>
+    </mat-card>
+    <mat-card class="action-card" routerLink="/ai-assistant">
+      <mat-icon style="color:#6a1b9a;font-size:40px;width:40px;height:40px">smart_toy</mat-icon>
+      <h3>AI Health Assistant</h3>
+      <p>Get healthcare guidance</p>
+    </mat-card>
+    <mat-card class="action-card" routerLink="/emergency">
+      <mat-icon style="color:#c62828;font-size:40px;width:40px;height:40px">emergency</mat-icon>
+      <h3>Emergency Guide</h3>
+      <p>First aid & emergency help</p>
+    </mat-card>
+    <mat-card class="action-card" routerLink="/medicine-scanner">
+      <mat-icon style="color:#00838f;font-size:40px;width:40px;height:40px">document_scanner</mat-icon>
+      <h3>Medicine Scanner</h3>
+      <p>Scan & identify medicines</p>
+    </mat-card>
+    <mat-card class="action-card" routerLink="/doctors">
+      <mat-icon style="color:#e65100;font-size:40px;width:40px;height:40px">medical_services</mat-icon>
+      <h3>Find Doctors</h3>
+      <p>Search by specialization</p>
+    </mat-card>
+  </div>
+
+  <mat-card style="margin-top:16px">
+    <mat-card-header><mat-card-title>Upcoming Appointments</mat-card-title></mat-card-header>
+    <mat-card-content>
+      <div *ngIf="loading" style="text-align:center;padding:32px"><mat-spinner diameter="36"></mat-spinner></div>
+      <div *ngIf="!loading && appointments.length === 0" style="text-align:center;padding:32px;color:#bbb">
+        <mat-icon style="font-size:48px;width:48px;height:48px">event_busy</mat-icon>
+        <p>No upcoming appointments</p>
+        <button mat-raised-button color="primary" routerLink="/appointments/new">Book Now</button>
+      </div>
+      <mat-list *ngIf="!loading && appointments.length > 0">
+        <mat-list-item *ngFor="let apt of appointments" style="border-bottom:1px solid #f0f0f0;margin-bottom:4px">
+          <mat-icon mat-list-icon color="primary">event</mat-icon>
+          <div mat-line>Dr. {{ apt.doctor?.user?.firstName }} {{ apt.doctor?.user?.lastName }}</div>
+          <div mat-line style="color:#666;font-size:0.8rem">
+            {{ apt.appointmentDate | date:'mediumDate' }} at {{ apt.appointmentTime }} · {{ apt.type | titlecase }}
+          </div>
+          <span class="status-chip" [ngClass]="apt.status">{{ apt.status }}</span>
+        </mat-list-item>
+      </mat-list>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="disclaimer-banner" style="margin-top:16px">
+    <strong>Health Disclaimer:</strong> The AI assistant and medicine scanner provide educational information only.
+    Always consult a qualified healthcare professional for medical advice, diagnosis, or treatment.
+  </div>
+</div>
+
+<style>
+.patient-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:16px; }
+.action-card { cursor:pointer; text-align:center; padding:24px 16px; transition:transform 0.2s,box-shadow 0.2s; }
+.action-card:hover { transform:translateY(-4px); box-shadow:0 6px 20px rgba(0,0,0,0.14); }
+.action-card h3 { margin:12px 0 4px; font-size:1rem; font-weight:600; }
+.action-card p { color:#666; font-size:0.8rem; margin:0; }
+@media(max-width:768px) { .patient-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:480px) { .patient-grid { grid-template-columns:1fr; } }
+</style>

@@ -1,0 +1,42 @@
+<mat-toolbar class="navbar">
+  <button mat-icon-button (click)="menuToggle.emit()">
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <span class="page-title">{{ pageTitle }}</span>
+  <span class="spacer"></span>
+
+  <button class="search-trigger" (click)="openSearch()">
+    <mat-icon>search</mat-icon>
+    <span class="search-text">Search...</span>
+    <span class="kbd">Ctrl K</span>
+  </button>
+
+  <button mat-icon-button matTooltip="AI Assistant" (click)="navigateTo('/ai-assistant')">
+    <mat-icon>smart_toy</mat-icon>
+  </button>
+
+  <button mat-icon-button matTooltip="Emergency" (click)="navigateTo('/emergency')">
+    <mat-icon style="color: #f44336;">emergency</mat-icon>
+  </button>
+
+  <app-notification-bell></app-notification-bell>
+
+  <button mat-icon-button [matMenuTriggerFor]="profileMenu">
+    <div class="avatar-btn">{{ auth.currentUser?.firstName?.[0] }}{{ auth.currentUser?.lastName?.[0] }}</div>
+  </button>
+
+  <mat-menu #profileMenu="matMenu">
+    <div class="menu-header" mat-menu-item disabled>
+      <strong>{{ fullName }}</strong>
+      <br><small>{{ auth.currentUser?.role | titlecase }}</small>
+    </div>
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="navigateTo('/auth/profile')">
+      <mat-icon>person</mat-icon> My Profile
+    </button>
+    <button mat-menu-item (click)="logout()">
+      <mat-icon>logout</mat-icon> Logout
+    </button>
+  </mat-menu>
+</mat-toolbar>

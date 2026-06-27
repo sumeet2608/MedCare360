@@ -1,0 +1,94 @@
+<div class="fade-in">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1>{{ getGreeting() }}, Admin 👋</h1>
+      <p>{{ currentTime | date:'EEEE, MMMM d, y — h:mm:ss a' }} · MedCare 360 Hospital Management</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button routerLink="/analytics"><mat-icon>analytics</mat-icon> Full Analytics</button>
+      <button mat-raised-button color="primary" routerLink="/patients/new"><mat-icon>person_add</mat-icon> New Patient</button>
+    </div>
+  </div>
+
+  <!-- AI Insights Banner -->
+  <mat-card class="ai-insight-card">
+    <div class="ai-insight-inner">
+      <div class="ai-badge">
+        <mat-icon>smart_toy</mat-icon>
+        <span>AI Insights</span>
+      </div>
+      <div class="ai-insight-text" *ngIf="!aiInsightLoading">{{ aiInsight }}</div>
+      <div class="ai-insight-text" *ngIf="aiInsightLoading">
+        <mat-progress-spinner diameter="20" mode="indeterminate" style="display:inline-block;vertical-align:middle;margin-right:8px"></mat-progress-spinner>
+        Generating AI insights for today…
+      </div>
+      <button mat-icon-button (click)="loadAiInsight()" matTooltip="Refresh insights" [disabled]="aiInsightLoading">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </mat-card>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-grid">
+    <mat-card *ngFor="let i of [1,2,3,4,5,6,7,8]" class="stat-card skeleton"></mat-card>
+  </div>
+
+  <!-- Stat Cards — White Glassmorphism (matches MedCare360 design system) -->
+  <div class="stats-grid" *ngIf="!loading">
+    <div class="dash-stat-card" *ngFor="let card of statCards"
+         [routerLink]="card.route"
+         [style.--card-color]="card.accentColor"
+         [attr.aria-label]="card.label + ': ' + formatValue(card)"
+         tabindex="0"
+         (keydown.enter)="router.navigate([card.route])">
+
+      <div class="dsc-top">
+        <div class="dsc-icon" [style.background]="card.iconBg">
+          <mat-icon [style.color]="card.accentColor">{{ card.icon }}</mat-icon>
+        </div>
+        <div class="dsc-trend" [class.up]="card.trend > 0" [class.down]="card.trend < 0" [class.flat]="card.trend === 0">
+          <mat-icon>{{ card.trend > 0 ? 'arrow_upward' : card.trend < 0 ? 'arrow_downward' : 'remove' }}</mat-icon>
+          {{ card.trend > 0 ? '+' : '' }}{{ card.trend }}%
+        </div>
+      </div>
+      <div class="dsc-value">{{ formatValue(card) }}</div>
+      <div class="dsc-label">{{ card.label }}</div>
+      <div class="dsc-footer">vs {{ card.trendLabel }}</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <mat-card class="chart-card">
+      <mat-card-header><mat-card-title>Revenue Trend</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <canvas baseChart [data]="revenueData" [options]="lineChartOptions" type="line" height="100"></canvas>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="chart-card">
+      <mat-card-header><mat-card-title>Appointment Status</mat-card-title></mat-card-header>
+      <mat-card-content style="display:flex;justify-content:center;padding:16px">
+        <canvas baseChart [data]="appointmentData" [options]="doughnutOptions" type="doughnut" height="180" style="max-width:320px"></canvas>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Quick Actions — Magic Gradient Buttons -->
+  <mat-card class="quick-actions-card">
+    <mat-card-header><mat-card-title>⚡ Quick Actions</mat-card-title></mat-card-header>
+    <mat-card-content>
+      <div class="quick-actions-grid">
+        <button *ngFor="let a of quickActions"
+                class="quick-action-btn"
+                [routerLink]="a.route"
+                [style.background]="a.gradient"
+                [style.box-shadow]="'0 4px 16px ' + a.shadow"
+                [attr.aria-label]="a.label">
+          <mat-icon>{{ a.icon }}</mat-icon> {{ a.label }}
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

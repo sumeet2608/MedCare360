@@ -1,0 +1,33 @@
+.scanner-layout { display:grid; grid-template-columns:1fr 1.4fr; gap:20px; @media(max-width:900px){grid-template-columns:1fr;} }
+.upload-card mat-card-title { display:flex; align-items:center; gap:8px; }
+.drop-zone { border:2px dashed var(--primary); border-radius:14px; min-height:220px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all var(--ease-base); &:hover { background:var(--primary-light); border-color:var(--primary-dark); } &.has-preview { border-style:solid; padding:8px; background:var(--primary-light); } }
+.drop-placeholder { text-align:center; color:#666; mat-icon { font-size:56px; width:56px; height:56px; color:var(--primary); opacity:0.5; } p { margin:12px 0 4px; font-size:0.95rem; } span { font-size:0.8rem; color:#aaa; } }
+.preview-img { max-height:280px; max-width:100%; border-radius:8px; object-fit:contain; }
+.tips-card { background:#f5f7fa; border-radius:8px; padding:14px 16px; margin-top:16px; h4 { display:flex; align-items:center; gap:6px; margin:0 0 8px; font-size:0.9rem; mat-icon { font-size:18px; color:#ff9800; } } ul { margin:0; padding-left:20px; font-size:0.8rem; color:#666; li { padding:2px 0; } } }
+.no-result { display:flex; flex-direction:column; align-items:center; justify-content:center; height:300px; color:#bbb; mat-icon { font-size:72px; width:72px; height:72px; } p { margin-top:12px; } }
+.result-header-card { margin-bottom:12px; padding:20px; }
+.result-content mat-expansion-panel { margin-bottom:4px; }
+.final-disclaimer { display:flex; gap:10px; background:#fff8e1; border-radius:8px; padding:14px; mat-icon { color:#f57f17; flex-shrink:0; } p { margin:0; font-size:0.8rem; color:#5d4037; line-height:1.6; } }
+
+.verify-badge {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 12px; padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.8rem; font-weight: 600;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &.verified { background: rgba(16,185,129,0.10); color: #059669; }
+  &.unverified { background: rgba(245,158,11,0.12); color: #b45309; }
+}
+
+.ocr-panel { margin-top: 8px; }
+.ocr-raw {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  color: #475569;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 160px;
+  overflow-y: auto;
+}

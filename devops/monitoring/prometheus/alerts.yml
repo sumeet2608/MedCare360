@@ -1,0 +1,103 @@
+groups:
+  - name: medcare360.critical
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is DOWN"
+          description: "{{ $labels.job }} has been unreachable for > 1 minute."
+
+      - alert: HighErrorRate
+        expr: |
+          rate(medcare_http_request_duration_seconds_count{status=~"5.."}[5m])
+          / rate(medcare_http_request_duration_seconds_count[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate > 5% for 2 minutes on {{ $labels.service }}."
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(medcare_http_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on {{ $labels.service }}"
+          description: "p95 latency > 2s on {{ $labels.service }}."
+
+  - name: medcare360.infrastructure
+    rules:
+      - alert: HighCPU
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU on {{ $labels.instance }}"
+          description: "CPU > 80% for 5 minutes."
+
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Less than 15% disk space remaining."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage > 85% for 5 minutes."
+
+      - alert: MongoDBDown
+        expr: up{job="mongodb"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MongoDB is DOWN"
+          description: "MongoDB exporter is unreachable — database may be down."
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is DOWN"
+          description: "Redis is unreachable — sessions and cache affected."
+
+  - name: medcare360.healthcare
+    rules:
+      - alert: AmbulanceServiceDown
+        expr: up{job="medcare-ambulance-service"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          team: emergency
+        annotations:
+          summary: "Ambulance service is DOWN"
+          description: "CRITICAL: Ambulance dispatch service unavailable — emergency response impacted."
+
+      - alert: AIServiceDown
+        expr: up{job="medcare-ai-service"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI service is DOWN"
+          description: "AI Assistant, Symptom Checker, and Medicine Scanner are unavailable."

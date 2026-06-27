@@ -1,0 +1,48 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>{{ isEdit ? 'Edit Doctor' : 'Add New Doctor' }}</h1></div>
+    <button mat-stroked-button routerLink="/doctors"><mat-icon>arrow_back</mat-icon> Back</button>
+  </div>
+  <div *ngIf="loading" style="text-align:center;padding:60px"><mat-spinner diameter="48"></mat-spinner></div>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!loading">
+    <mat-card class="form-card" style="max-width:800px;margin-bottom:16px;padding:24px">
+      <mat-card-header><mat-card-title>Doctor Information</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <div class="form-row">
+          <mat-form-field appearance="outline"><mat-label>First Name *</mat-label><input matInput formControlName="firstName"><mat-error>Required</mat-error></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Last Name *</mat-label><input matInput formControlName="lastName"><mat-error>Required</mat-error></mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline"><mat-label>Email *</mat-label><input matInput type="email" formControlName="email"><mat-error>Valid email required</mat-error></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Phone</mat-label><input matInput formControlName="phone"></mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Specialization *</mat-label>
+            <mat-select formControlName="specialization">
+              <mat-option *ngFor="let s of specializations" [value]="s">{{ s }}</mat-option>
+            </mat-select>
+            <mat-error>Required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>License Number *</mat-label><input matInput formControlName="licenseNumber"><mat-error>Required</mat-error></mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline"><mat-label>Experience (years)</mat-label><input matInput type="number" formControlName="experience"></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Consultation Fee (₹)</mat-label><input matInput type="number" formControlName="consultationFee"></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Department</mat-label><input matInput formControlName="department"></mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" style="width:100%">
+          <mat-label>Bio / About</mat-label>
+          <textarea matInput formControlName="bio" rows="3" placeholder="Brief professional summary..."></textarea>
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+    <div style="display:flex;gap:12px;max-width:800px">
+      <button mat-stroked-button type="button" routerLink="/doctors">Cancel</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="saving">
+        <mat-spinner diameter="18" *ngIf="saving"></mat-spinner>
+        <span *ngIf="!saving">{{ isEdit ? 'Update Doctor' : 'Add Doctor' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

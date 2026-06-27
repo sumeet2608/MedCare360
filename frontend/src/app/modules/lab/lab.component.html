@@ -1,0 +1,60 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Lab Management</h1><p>{{ total }} test orders</p></div>
+    <button mat-raised-button color="primary" (click)="load()"><mat-icon>refresh</mat-icon> Refresh</button>
+  </div>
+
+  <mat-tab-group class="lab-tabs" animationDuration="200ms" disableRipple>
+
+    <!-- Tab 1: Lab Tests -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon style="margin-right:6px;font-size:18px;vertical-align:middle">biotech</mat-icon>
+        Lab Tests
+      </ng-template>
+
+      <div class="tab-content">
+        <app-data-grid
+          [columns]="columns"
+          [rows]="tests"
+          [loading]="loading"
+          searchPlaceholder="Search test name, patient..."
+          exportFilename="lab-tests"
+          emptyMessage="No lab tests found">
+
+          <ng-template appGridCell="testId" let-t><span style="font-size:0.75rem;font-weight:600;color:var(--primary)">{{ t.testId }}</span></ng-template>
+          <ng-template appGridCell="testName" let-t><strong>{{ t.testName }}</strong></ng-template>
+          <ng-template appGridCell="category" let-t>{{ t.category | titlecase }}</ng-template>
+          <ng-template appGridCell="priority" let-t>
+            <span [style.color]="getPriorityColor(t.priority)" style="font-weight:600;text-transform:uppercase;font-size:0.75rem">{{ t.priority }}</span>
+          </ng-template>
+          <ng-template appGridCell="status" let-t>
+            <span class="status-chip" [class]="getStatusClass(t.status)">{{ t.status | titlecase }}</span>
+          </ng-template>
+          <ng-template appGridCell="actions" let-t>
+            <button mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()"><mat-icon>more_vert</mat-icon></button>
+            <mat-menu #menu>
+              <button mat-menu-item (click)="updateStatus(t._id,'sample_collected')"><mat-icon>colorize</mat-icon> Sample Collected</button>
+              <button mat-menu-item (click)="updateStatus(t._id,'processing')"><mat-icon>biotech</mat-icon> Processing</button>
+              <button mat-menu-item (click)="updateStatus(t._id,'completed')"><mat-icon>done_all</mat-icon> Completed</button>
+            </mat-menu>
+          </ng-template>
+        </app-data-grid>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: AI Analyzer -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon style="margin-right:6px;font-size:18px;vertical-align:middle;color:#0891b2">psychology</mat-icon>
+        AI Analyzer
+        <span class="ai-tab-badge">AI</span>
+      </ng-template>
+
+      <div class="tab-content">
+        <app-ai-lab-analyzer></app-ai-lab-analyzer>
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

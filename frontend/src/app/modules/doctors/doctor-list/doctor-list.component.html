@@ -1,0 +1,111 @@
+<div class="doctors-page fade-in">
+  <div class="page-header">
+    <div>
+      <h1>Our Doctors</h1>
+      <p>{{ total }} specialists across {{ specializations.length - 1 }} departments</p>
+    </div>
+    <button mat-raised-button color="primary" routerLink="/doctors/new">
+      <mat-icon>person_add</mat-icon> Add Doctor
+    </button>
+  </div>
+
+  <div class="toolbar-glass">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search doctors</mat-label>
+      <input matInput (keyup)="onSearch($any($event.target).value)" placeholder="Name or specialization...">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="sort-field">
+      <mat-label>Sort by</mat-label>
+      <mat-select [value]="sortBy" (selectionChange)="setSort($event.value)">
+        <mat-option value="rating">Highest Rated</mat-option>
+        <mat-option value="experience">Most Experienced</mat-option>
+        <mat-option value="fee-low">Fee: Low to High</mat-option>
+        <mat-option value="fee-high">Fee: High to Low</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="spec-chips">
+    <button *ngFor="let spec of specializations"
+            class="spec-chip" [class.active]="activeSpecialization === spec"
+            (click)="setSpecialization(spec)">
+      {{ spec }}
+      <span class="chip-count">{{ specCount(spec) }}</span>
+    </button>
+  </div>
+
+  <!-- Skeleton loaders -->
+  <div class="doctor-grid" *ngIf="loading">
+    <div class="doctor-card skeleton" *ngFor="let s of [1,2,3,4,5,6,7,8]">
+      <div class="skel-photo"></div>
+      <div class="skel-line w-70"></div>
+      <div class="skel-line w-50"></div>
+      <div class="skel-line w-90"></div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="!loading && filtered.length === 0">
+    <mat-icon>search_off</mat-icon>
+    <h3>No doctors found</h3>
+    <p>Try a different specialization or search term.</p>
+  </div>
+
+  <!-- Doctor cards -->
+  <div class="doctor-grid" *ngIf="!loading && filtered.length > 0">
+    <div class="doctor-card" *ngFor="let d of filtered" (click)="viewDoctor(d._id)">
+      <div class="card-glow"></div>
+      <div class="doctor-photo-wrap">
+        <div class="doctor-avatar" [style.background]="avatarGradient(d.user?.firstName, d.user?.lastName)">
+          {{ initials(d.user?.firstName, d.user?.lastName) }}
+        </div>
+        <span class="avail-dot" [class.available]="d.status === 'active'"></span>
+      </div>
+
+      <div class="doctor-info">
+        <h3>Dr. {{ d.user?.firstName }} {{ d.user?.lastName }}</h3>
+        <span class="spec-badge">{{ d.specialization }}</span>
+
+        <div class="rating-row">
+          <span class="star" *ngFor="let s of stars(d.rating)" [class.filled]="s">★</span>
+          <span class="rating-num">{{ d.rating?.toFixed(1) || '—' }}</span>
+          <span class="rating-count">({{ d.totalRatings || 0 }})</span>
+        </div>
+
+        <div class="meta-row">
+          <div class="meta-item"><mat-icon>work_history</mat-icon> {{ d.experience }} yrs exp</div>
+          <div class="meta-item"><mat-icon>translate</mat-icon> {{ (d.languages || []).slice(0,2).join(', ') }}</div>
+        </div>
+
+        <div class="fee-row">
+          <span class="fee">₹{{ d.consultationFee }}</span>
+          <span class="fee-label">consultation fee</span>
+        </div>
+
+        <!-- Assigned Staff -->
+        <div class="staff-row" *ngIf="d.assignedStaff?.length">
+          <mat-icon class="staff-icon">badge</mat-icon>
+          <div class="staff-avatars">
+            <span class="staff-avatar" *ngFor="let s of d.assignedStaff | slice:0:3"
+                  [matTooltip]="($any(s).user?.firstName || '') + ' ' + ($any(s).user?.lastName || '') + ' — ' + $any(s).designation">
+              {{ ($any(s).user?.firstName || '?')[0] }}{{ ($any(s).user?.lastName || '')[0] }}
+            </span>
+            <span class="staff-more" *ngIf="d.assignedStaff.length > 3">+{{ d.assignedStaff.length - 3 }}</span>
+          </div>
+          <span class="staff-label">{{ d.assignedStaff.length }} staff</span>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button mat-stroked-button class="action-btn" (click)="bookAppointment(d._id, $event)">
+          <mat-icon>calendar_today</mat-icon> Book
+        </button>
+        <button mat-icon-button matTooltip="Edit" (click)="editDoctor(d._id, $event)">
+          <mat-icon>edit</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

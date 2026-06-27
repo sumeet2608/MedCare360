@@ -1,0 +1,134 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Hospital Analytics</h1><p>Comprehensive insights and statistics</p></div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <mat-form-field appearance="outline" style="width:160px;margin-bottom:-1.25em">
+        <mat-label>Revenue Period</mat-label>
+        <mat-select [(ngModel)]="revenuePeriod" (selectionChange)="onPeriodChange()">
+          <mat-option value="daily">Daily</mat-option>
+          <mat-option value="monthly">Monthly</mat-option>
+          <mat-option value="yearly">Yearly</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <button mat-stroked-button (click)="loadAll()"><mat-icon>refresh</mat-icon></button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" style="text-align:center;padding:80px"><mat-spinner diameter="56"></mat-spinner></div>
+
+  <div *ngIf="!loading">
+    <!-- KPI Row — responsive auto-fill (never overflow sidebar) -->
+    <div class="site-stats-row analytics-kpi-row">
+      <div class="site-stat-card" *ngFor="let k of [
+        {label:'Total Patients',     val:stats.totalPatients,           icon:'people',           color:'#0891b2', bg:'#e0f2fe', trend:12},
+        {label:'Active Doctors',     val:stats.totalDoctors,            icon:'medical_services', color:'#059669', bg:'#d1fae5', trend:0},
+        {label:'Admitted',           val:stats.admittedPatients,        icon:'hotel',            color:'#d97706', bg:'#fef3c7', trend:-3},
+        {label:'Monthly Revenue',    val:'₹'+(stats.monthlyRevenue||0), icon:'currency_rupee',   color:'#0891b2', bg:'#e0f2fe', trend:22},
+        {label:'Today Appointments', val:stats.todayAppointments,       icon:'calendar_today',   color:'#7c3aed', bg:'#ede9fe', trend:8},
+        {label:'Low Stock Alerts',   val:stats.lowStockMedicines,       icon:'warning',          color:'#dc2626', bg:'#fee2e2', trend:2}
+      ]">
+        <div class="ssc-icon" [style.background]="k.bg"><mat-icon [style.color]="k.color">{{ k.icon }}</mat-icon></div>
+        <div class="ssc-body">
+          <div class="ssc-value">{{ k.val }}</div>
+          <div class="ssc-label">{{ k.label }}</div>
+        </div>
+        <div class="ssc-trend" [class.up]="k.trend>0" [class.down]="k.trend<0" [class.flat]="k.trend===0">
+          <mat-icon>{{ k.trend>0 ? 'arrow_upward' : k.trend<0 ? 'arrow_downward' : 'remove' }}</mat-icon>
+          {{ k.trend>0 ? '+' : '' }}{{ k.trend }}%
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1: Revenue + Gender -->
+    <div class="charts-row">
+      <mat-card class="chart-card wide">
+        <mat-card-header><mat-card-title>Revenue Trend</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="revenueOption" class="chart-canvas"></div></mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Gender Distribution</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="genderOption" class="chart-canvas"></div></mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Charts Row 2: Age + Appointment Trend -->
+    <div class="charts-row">
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Patient Age Groups</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="ageOption" class="chart-canvas"></div></mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card wide">
+        <mat-card-header><mat-card-title>Appointment Trend (30 days)</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="appointmentTrendOption" class="chart-canvas"></div></mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Charts Row 3: Bed Occupancy + Department Performance -->
+    <div class="charts-row">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Bed Occupancy</mat-card-title>
+          <span class="occ-badge">{{ bedOccupancyRate }}% occupied</span>
+        </mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="bedOccupancyOption" class="chart-canvas"></div></mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card wide">
+        <mat-card-header><mat-card-title>Department Performance (Appointments)</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="departmentOption" class="chart-canvas tall"></div></mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Charts Row 4: Medicine Stock + Inventory -->
+    <div class="charts-row">
+      <mat-card class="chart-card wide">
+        <mat-card-header><mat-card-title>Medicine Stock by Category</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="medicineStockOption" class="chart-canvas tall"></div></mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Inventory by Category</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="inventoryOption" class="chart-canvas"></div></mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Charts Row 5: Ambulance Fleet + Low Stock List -->
+    <div class="charts-row">
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Ambulance Fleet Status</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad"><div echarts [options]="ambulanceOption" class="chart-canvas"></div></mat-card-content>
+      </mat-card>
+      <mat-card class="chart-card wide">
+        <mat-card-header><mat-card-title>Low Stock Watch List</mat-card-title></mat-card-header>
+        <mat-card-content class="chart-pad">
+          <div class="empty-row" *ngIf="!lowStockTop.length">
+            <mat-icon>check_circle</mat-icon> No medicines currently below reorder level
+          </div>
+          <table class="low-stock-table" *ngIf="lowStockTop.length">
+            <tr *ngFor="let m of lowStockTop">
+              <td class="m-name">{{ m.name }}</td>
+              <td class="m-cat">{{ m.category | titlecase }}</td>
+              <td class="m-qty" [class.critical]="m.quantity === 0">{{ m.quantity }} / {{ m.minStockLevel }}</td>
+            </tr>
+          </table>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
+
+<style>
+.kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; @media(max-width:900px){grid-template-columns:repeat(2,1fr);} }
+.kpi-card { padding:16px 20px; }
+.kpi-val { font-family:'Figtree',sans-serif; font-size:1.8rem; font-weight:800; color:var(--text-primary); letter-spacing:-0.5px; }
+.kpi-lbl { font-family:'Noto Sans',sans-serif; font-size:0.72rem; color:var(--text-muted); margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+.charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px; @media(max-width:900px){grid-template-columns:1fr;} }
+.chart-pad { padding:8px 16px 16px; }
+.chart-canvas { height: 260px; width: 100%; &.tall { height: 320px; } }
+.occ-badge { margin-left:auto; font-size:0.72rem; font-weight:700; background:rgba(8,145,178,0.10); color:#0891b2; padding:3px 10px; border-radius:10px; }
+.low-stock-table { width:100%; border-collapse:collapse; font-size:0.84rem;
+  td { padding:8px 10px; border-bottom:1px solid #f1f5f9; }
+  .m-name { font-weight:600; color:#0f172a; }
+  .m-cat { color:#94a3b8; font-size:0.78rem; }
+  .m-qty { font-weight:700; color:#b45309; text-align:right; &.critical { color:#dc2626; } }
+}
+.empty-row { display:flex; align-items:center; gap:8px; color:#059669; font-size:0.85rem; padding:16px 0; }
+</style>

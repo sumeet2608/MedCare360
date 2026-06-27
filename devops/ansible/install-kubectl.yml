@@ -1,0 +1,36 @@
+---
+- name: Install kubectl and AWS CLI
+  hosts: jenkins_server
+  become: true
+
+  vars:
+    kubectl_version: "v1.29.0"
+
+  tasks:
+    - name: Download kubectl binary
+      get_url:
+        url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+
+    - name: Verify kubectl
+      command: kubectl version --client
+      register: kubectl_out
+      changed_when: false
+
+    - name: Print kubectl version
+      debug:
+        msg: "{{ kubectl_out.stdout }}"
+
+    - name: Download aws-iam-authenticator
+      get_url:
+        url: https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.6.11/aws-iam-authenticator_0.6.11_linux_amd64
+        dest: /usr/local/bin/aws-iam-authenticator
+        mode: "0755"
+
+    - name: Install eksctl
+      shell: |
+        curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+        mv /tmp/eksctl /usr/local/bin/eksctl
+      args:
+        creates: /usr/local/bin/eksctl

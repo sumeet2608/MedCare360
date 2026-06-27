@@ -1,0 +1,152 @@
+<div class="auth-wrapper">
+
+  <!-- ── Animated Left Panel ── -->
+  <div class="auth-left">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-lines"></div>
+
+    <div class="auth-left-content">
+      <div class="brand-block">
+        <div class="brand-icon"><mat-icon>local_hospital</mat-icon></div>
+        <div>
+          <div class="brand-name"><span class="brand-med">MedCare</span><span class="brand-num">360</span></div>
+          <div class="brand-badge"><mat-icon>shield</mat-icon> HIPAA Compliant</div>
+        </div>
+      </div>
+
+      <h1 class="hero-title">
+        Your Health,<br>
+        <span class="gradient-text">Smarter</span><br>
+        Every Day
+      </h1>
+      <p class="hero-sub">Join over 1 million patients managing their health digitally with AI-powered insights and 24/7 care.</p>
+
+      <!-- Benefits -->
+      <div class="benefits-list">
+        <div class="benefit" *ngFor="let b of benefits; let i = index" [style.animationDelay]="(i * 0.12) + 's'">
+          <div class="benefit-icon" [style.background]="b.color">
+            <mat-icon>{{ b.icon }}</mat-icon>
+          </div>
+          <div class="benefit-text">
+            <strong>{{ b.title }}</strong>
+            <span>{{ b.desc }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust badges -->
+      <div class="trust-row">
+        <div class="trust-badge"><mat-icon>verified_user</mat-icon><span>256-bit SSL</span></div>
+        <div class="trust-badge"><mat-icon>health_and_safety</mat-icon><span>HIPAA Safe</span></div>
+        <div class="trust-badge"><mat-icon>star</mat-icon><span>4.9★ Rating</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right Form Panel ── -->
+  <div class="auth-right">
+    <div class="right-orb right-orb-1"></div>
+    <div class="right-orb right-orb-2"></div>
+
+    <div class="auth-card">
+      <div class="card-glow"></div>
+
+      <div class="auth-header">
+        <div class="auth-logo">
+          <mat-icon>person_add</mat-icon>
+        </div>
+        <h2>Create Account</h2>
+        <p>Join MedCare 360 — it's free</p>
+      </div>
+
+      <!-- Progress steps -->
+      <div class="reg-steps">
+        <div class="step active"><span>1</span><label>Personal</label></div>
+        <div class="step-line"></div>
+        <div class="step"><span>2</span><label>Security</label></div>
+        <div class="step-line"></div>
+        <div class="step"><span>3</span><label>Done</label></div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-row-2">
+          <div class="field-group">
+            <label class="field-label">First Name</label>
+            <mat-form-field appearance="outline" class="premium-field">
+              <input matInput formControlName="firstName" placeholder="Rahul">
+              <mat-icon matPrefix>person</mat-icon>
+              <mat-error>First name required</mat-error>
+            </mat-form-field>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Last Name</label>
+            <mat-form-field appearance="outline" class="premium-field">
+              <input matInput formControlName="lastName" placeholder="Sharma">
+              <mat-icon matPrefix>person_outline</mat-icon>
+              <mat-error>Last name required</mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Email Address</label>
+          <mat-form-field appearance="outline" class="premium-field">
+            <input matInput type="email" formControlName="email" placeholder="you@example.com">
+            <mat-icon matPrefix>alternate_email</mat-icon>
+            <mat-error>Valid email required</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Phone Number</label>
+          <mat-form-field appearance="outline" class="premium-field">
+            <input matInput formControlName="phone" placeholder="+91 9876543210">
+            <mat-icon matPrefix>phone</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <mat-form-field appearance="outline" class="premium-field">
+            <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="Min 8 chars, uppercase & number">
+            <mat-icon matPrefix>lock</mat-icon>
+            <button mat-icon-button matSuffix type="button" (click)="hidePassword = !hidePassword">
+              <mat-icon>{{ hidePassword ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+            <mat-error>8+ chars, uppercase, lowercase & number</mat-error>
+          </mat-form-field>
+
+          <div class="strength-meter" *ngIf="form.get('password')?.value">
+            <div class="strength-bars">
+              <span *ngFor="let i of [0,1,2,3]" [class.filled]="passwordStrength() > i" [class]="'bar-' + strengthLevel()"></span>
+            </div>
+            <span class="strength-label" [class]="'label-' + strengthLevel()">{{ strengthLabel() }}</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Confirm Password</label>
+          <mat-form-field appearance="outline" class="premium-field">
+            <input matInput type="password" formControlName="confirmPassword" placeholder="Repeat your password">
+            <mat-icon matPrefix>lock_outline</mat-icon>
+            <mat-error *ngIf="form.hasError('mismatch')">Passwords do not match</mat-error>
+          </mat-form-field>
+        </div>
+
+        <button type="submit" [disabled]="loading" class="submit-btn">
+          <div class="btn-shine"></div>
+          <mat-spinner diameter="20" *ngIf="loading"></mat-spinner>
+          <mat-icon *ngIf="!loading">how_to_reg</mat-icon>
+          <span>{{ loading ? 'Creating account…' : 'Create Account' }}</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <span>Already have an account?</span>
+        <a routerLink="/auth/login">Sign in <mat-icon>arrow_forward</mat-icon></a>
+      </div>
+    </div>
+  </div>
+</div>

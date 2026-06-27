@@ -1,0 +1,106 @@
+<div class="fade-in timeline-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <button mat-icon-button (click)="back()" matTooltip="Back to EMR"><mat-icon>arrow_back</mat-icon></button>
+      <div>
+        <h1><mat-icon class="title-icon">timeline</mat-icon> Clinical Timeline</h1>
+        <p *ngIf="patient">{{ patientName }} · {{ patient.patientId }} · {{ patient.gender | titlecase }} · {{ patient.bloodGroup }}</p>
+        <p *ngIf="!patient && !loading">Patient record</p>
+      </div>
+    </div>
+    <div class="header-actions" *ngIf="!loading">
+      <button mat-stroked-button (click)="newSOAP()"><mat-icon>note_add</mat-icon> SOAP Note</button>
+      <button mat-raised-button color="primary" (click)="newRx()"><mat-icon>medication</mat-icon> Prescribe</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading clinical timeline...</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- Summary Stats -->
+    <div class="summary-chips">
+      <div class="summary-chip" *ngFor="let opt of filterOptions.slice(1)"
+           [class.active]="filterType === opt.value"
+           [style.--chip-color]="getTypeConf(opt.value).color"
+           (click)="setFilter(opt.value === filterType ? 'all' : opt.value)">
+        <mat-icon [style.color]="getTypeConf(opt.value).color">{{ opt.icon }}</mat-icon>
+        {{ opt.label }}
+        <span class="chip-count">{{ countByType(opt.value) }}</span>
+      </div>
+      <button class="all-btn" [class.active]="filterType === 'all'" (click)="setFilter('all')">
+        All Events <span class="chip-count">{{ timeline.length }}</span>
+      </button>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-timeline" *ngIf="filteredTimeline.length === 0">
+      <mat-icon>event_note</mat-icon>
+      <h3>No clinical events found</h3>
+      <p>{{ filterType !== 'all' ? 'No ' + filterType.replace('_',' ') + 's recorded yet.' : 'Start building this patient\'s clinical history.' }}</p>
+      <div class="empty-actions">
+        <button mat-stroked-button (click)="newSOAP()"><mat-icon>note_add</mat-icon> Add SOAP Note</button>
+        <button mat-raised-button color="primary" (click)="newRx()"><mat-icon>medication</mat-icon> Add Prescription</button>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-container" *ngIf="filteredTimeline.length > 0">
+      <div class="timeline-track"></div>
+      <div class="timeline-event" *ngFor="let event of filteredTimeline; let i = index">
+        <!-- Node -->
+        <div class="event-node" [style.background]="getTypeConf(event.type).bg" [style.border-color]="getTypeConf(event.type).color">
+          <mat-icon [style.color]="getTypeConf(event.type).color">{{ getTypeConf(event.type).icon }}</mat-icon>
+        </div>
+        <!-- Card -->
+        <mat-card class="event-card" [class.clickable]="event.type !== 'medical_record'" (click)="openEvent(event)">
+          <div class="event-header">
+            <div class="event-type-badge" [style.background]="getTypeConf(event.type).bg" [style.color]="getTypeConf(event.type).color">
+              <mat-icon>{{ getTypeConf(event.type).icon }}</mat-icon>
+              {{ getTypeConf(event.type).label }}
+            </div>
+            <div class="event-date">{{ event.date | date:'dd MMM yyyy, HH:mm' }}</div>
+          </div>
+          <h4 class="event-title">{{ getTitle(event) }}</h4>
+          <p class="event-subtitle">{{ getSubtitle(event) }}</p>
+
+          <!-- Medical Record details -->
+          <div class="record-details" *ngIf="event.type === 'medical_record' && $any(event.data).diagnoses?.length">
+            <div class="diagnoses-row">
+              <span class="dx-chip" *ngFor="let dx of $any(event.data).diagnoses | slice:0:3">
+                <strong>{{ $any(dx).icd10Code }}</strong> {{ $any(dx).icd10Description || $any(dx).icd10Code }}
+              </span>
+            </div>
+          </div>
+
+          <!-- SOAP Note preview -->
+          <div class="soap-preview" *ngIf="event.type === 'soap_note'">
+            <div class="soap-section" *ngIf="$any(event.data).subjective?.chiefComplaint">
+              <span class="soap-label">S</span> {{ $any(event.data).subjective.chiefComplaint }}
+            </div>
+            <div class="soap-section" *ngIf="$any(event.data).assessment?.primaryDiagnosis">
+              <span class="soap-label">A</span> {{ $any(event.data).assessment.primaryDiagnosis }}
+            </div>
+            <div class="soap-status" [class]="$any(event.data).status">{{ $any(event.data).status | titlecase }}</div>
+          </div>
+
+          <!-- Prescription preview -->
+          <div class="rx-preview" *ngIf="event.type === 'prescription'">
+            <div class="med-chip" *ngFor="let med of $any(event.data).medications | slice:0:4">
+              <mat-icon>medication</mat-icon> {{ $any(med).medicineName }} {{ $any(med).strength }} · {{ $any(med).frequency }}
+            </div>
+            <div class="rx-status" [class]="$any(event.data).status">{{ $any(event.data).status | titlecase }}</div>
+          </div>
+
+          <button mat-icon-button class="open-btn" *ngIf="event.type !== 'medical_record'" matTooltip="Open">
+            <mat-icon>open_in_new</mat-icon>
+          </button>
+        </mat-card>
+      </div>
+    </div>
+  </ng-container>
+</div>

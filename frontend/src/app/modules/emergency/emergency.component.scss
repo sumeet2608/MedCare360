@@ -1,0 +1,85 @@
+.emergency-header {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+
+  .header-icon {
+    width: 56px; height: 56px; border-radius: 14px;
+    background: #fef2f2;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(220,38,38,0.15);
+
+    mat-icon { color: var(--danger); font-size: 32px; width: 32px; height: 32px; }
+  }
+
+  h1 {
+    font-family: 'Figtree', sans-serif;
+    font-size: 1.5rem; font-weight: 700; margin: 0;
+    color: var(--text-primary);
+  }
+  p { color: var(--text-muted); margin: 4px 0 0; font-family: 'Noto Sans', sans-serif; }
+}
+
+// Magic MCP Emergency Grid — dark gradient cards with SVG circles
+.emergency-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 24px;
+  @media (max-width: 768px) { grid-template-columns: 1fr; }
+  @media (min-width: 1200px) { grid-template-columns: repeat(4, 1fr); }
+}
+
+.magic-emergency-card {
+  position: relative; overflow: hidden; border-radius: 18px;
+  padding: 0; cursor: pointer; color: white;
+  min-height: 120px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.20), 0 2px 6px rgba(0,0,0,0.12);
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: transform 220ms ease-out, box-shadow 220ms ease-out;
+
+  &:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.16);
+    .mec-arrow { transform: translateX(4px); }
+  }
+  &:focus-visible { outline: 2px solid rgba(255,255,255,0.7); outline-offset: 3px; }
+
+  .card-deco-svg { position: absolute; right: 0; top: 0; width: 55%; height: 100%; pointer-events: none; z-index: 0; }
+}
+
+.mec-inner {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 14px; padding: 18px 20px;
+  height: 100%;
+}
+
+.mec-icon-wrap {
+  width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+  background: rgba(255,255,255,0.18); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  mat-icon { font-size: 24px; width: 24px; height: 24px; color: white; }
+}
+
+.mec-info {
+  flex: 1; min-width: 0;
+  h3 { margin: 0 0 4px; font-family: 'Figtree', sans-serif; font-size: 0.95rem; font-weight: 800; color: white; line-height: 1.2; }
+  p  { margin: 0; font-size: 0.73rem; color: rgba(255,255,255,0.72); font-family: 'Noto Sans', sans-serif; line-height: 1.4; }
+}
+
+.mec-arrow {
+  color: rgba(255,255,255,0.6); flex-shrink: 0;
+  transition: transform 200ms ease-out;
+}
+
+// Legacy .emergency-card kept for fallback
+.emergency-card { display: none; }
+
+.sos-card {
+  background: linear-gradient(135deg, #061029, #0d2150, #0891b2);
+  color: white;
+  border: 1px solid rgba(8,145,178,0.3);
+  box-shadow: 0 4px 20px rgba(8,145,178,0.22);
+}
+
+.sos-content { display: flex; align-items: center; gap: 24px; padding: 8px; }
+.sos-content h2 { color: white; margin: 0 0 16px; font-family: 'Figtree', sans-serif; font-weight: 800; }
+.number-grid { display: flex; gap: 24px; flex-wrap: wrap; }
+.number-item { display: flex; flex-direction: column; align-items: center; }
+.num { font-family: 'Figtree', sans-serif; font-size: 1.6rem; font-weight: 800; color: #22d3ee; }
+.lbl { font-size: 0.75rem; color: rgba(255,255,255,0.6); font-family: 'Noto Sans', sans-serif; }

@@ -1,0 +1,33 @@
+<div class="bell-wrap">
+  <button mat-icon-button matTooltip="Notifications" (click)="toggle()">
+    <mat-icon [matBadge]="(notificationService.unreadCount$ | async) || null" matBadgeColor="warn" matBadgeSize="small">notifications</mat-icon>
+  </button>
+
+  <div class="notif-backdrop" *ngIf="open" (click)="close()"></div>
+
+  <div class="notif-panel" *ngIf="open">
+    <div class="notif-header">
+      <span>Notifications</span>
+      <button mat-button (click)="markAllRead()" *ngIf="(notificationService.unreadCount$ | async)">Mark all read</button>
+    </div>
+
+    <div class="notif-list">
+      <div class="empty-row" *ngIf="(notificationService.notifications$ | async)?.length === 0">
+        <mat-icon>notifications_none</mat-icon>
+        <p>You're all caught up</p>
+      </div>
+
+      <div class="notif-item" *ngFor="let n of notificationService.notifications$ | async"
+           [class.unread]="!n.isRead" [class]="'priority-' + n.priority"
+           (click)="select(n)">
+        <mat-icon class="notif-icon">{{ typeIcons[n.type] || 'info' }}</mat-icon>
+        <div class="notif-body">
+          <div class="notif-title">{{ n.title }}</div>
+          <div class="notif-msg">{{ n.message }}</div>
+          <div class="notif-time">{{ timeAgo(n.createdAt) }}</div>
+        </div>
+        <span class="unread-dot" *ngIf="!n.isRead"></span>
+      </div>
+    </div>
+  </div>
+</div>

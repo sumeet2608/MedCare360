@@ -1,0 +1,368 @@
+<div class="fade-in imaging-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><mat-icon class="title-icon">biotech</mat-icon> PACS Medical Imaging</h1>
+      <p class="page-sub">Radiology studies · DICOM viewer · AI-assisted reporting</p>
+    </div>
+    <div class="header-btns">
+      <button mat-stroked-button (click)="loadDemoStudies()"><mat-icon>refresh</mat-icon> Refresh</button>
+      <button mat-raised-button class="btn-upload" (click)="uploadModalOpen = true">
+        <mat-icon>cloud_upload</mat-icon> Upload Study
+      </button>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-row">
+    <mat-card class="stat-chip" *ngFor="let s of statCards" [style.border-left-color]="s.color">
+      <div class="chip-icon" [style.background]="s.bg"><mat-icon [style.color]="s.color">{{ s.icon }}</mat-icon></div>
+      <div>
+        <div class="chip-val" [style.color]="s.color">{{ getCount(s.key) }}</div>
+        <div class="chip-lbl">{{ s.label }}</div>
+      </div>
+    </mat-card>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-row">
+    <div class="search-wrap">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input class="search-input" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()" placeholder="Search patient or study ID...">
+    </div>
+    <mat-form-field appearance="outline" class="filter-select">
+      <mat-label>Modality</mat-label>
+      <mat-select [(ngModel)]="modalityFilter" (ngModelChange)="applyFilters()">
+        <mat-option value="all">All Modalities</mat-option>
+        <mat-option *ngFor="let m of modalities" [value]="m">{{ m }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="filter-select">
+      <mat-label>Status</mat-label>
+      <mat-select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+        <mat-option value="all">All Statuses</mat-option>
+        <mat-option value="pending">Pending</mat-option>
+        <mat-option value="in-progress">In Progress</mat-option>
+        <mat-option value="reported">Reported</mat-option>
+        <mat-option value="archived">Archived</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Loading studies from PACS...</p>
+  </div>
+
+  <!-- Main content: list left + viewer right -->
+  <div class="content-area" *ngIf="!loading">
+    <!-- Studies List -->
+    <div class="studies-list">
+      <div class="study-card"
+        *ngFor="let s of filteredStudies"
+        [class.selected]="selectedStudy?.id === s.id"
+        (click)="selectStudy(s)">
+
+        <div class="study-modality">
+          <mat-icon [style.color]="'#0891b2'">{{ modalityIcon(s.modality) }}</mat-icon>
+          <span class="modality-code">{{ s.modality }}</span>
+        </div>
+
+        <div class="study-info">
+          <div class="study-patient">{{ s.patientName }}</div>
+          <div class="study-id">{{ s.id }} · {{ s.bodyPart }}</div>
+          <div class="study-meta">
+            <span class="urgency-dot" [style.background]="urgencyColor(s.urgency)"></span>
+            {{ s.urgency | titlecase }} · {{ s.studyDate | date:'dd MMM yyyy' }}
+          </div>
+          <div class="study-ref">Ref: {{ s.referredBy }}</div>
+        </div>
+
+        <span class="status-pill"
+          [style.color]="statusColor(s.status)"
+          [style.background]="s.status === 'reported' ? '#d1fae5' : s.status === 'pending' ? '#fef3c7' : s.status === 'in-progress' ? '#e0f2fe' : '#f3f4f6'">
+          {{ s.status | titlecase }}
+        </span>
+      </div>
+
+      <div *ngIf="filteredStudies.length === 0" class="no-studies">
+        <mat-icon>image_not_supported</mat-icon>
+        <p>No studies found.</p>
+      </div>
+    </div>
+
+    <!-- DICOM Viewer — fixed height, always right -->
+    <div class="dicom-viewer" [class.viewer-visible]="selectedStudy">
+      <ng-container *ngIf="selectedStudy; else noStudySelected">
+        <!-- Viewer header -->
+        <div class="viewer-header">
+          <div>
+            <div class="viewer-title">{{ selectedStudy.modality }} · {{ selectedStudy.bodyPart }}</div>
+            <div class="viewer-sub">{{ selectedStudy.patientName }} · {{ selectedStudy.id }} · {{ selectedStudy.studyDate | date:'dd MMM yyyy' }}</div>
+          </div>
+          <button mat-icon-button (click)="closeViewer()" style="color:white"><mat-icon>close</mat-icon></button>
+        </div>
+
+        <!-- Viewer body: image left, report right -->
+        <div class="viewer-body">
+          <!-- Image panel -->
+          <div class="image-panel">
+            <!-- Toolbar -->
+            <div class="viewer-toolbar">
+              <button mat-icon-button matTooltip="Zoom In"        (click)="zoomIn()">       <mat-icon>zoom_in</mat-icon></button>
+              <button mat-icon-button matTooltip="Zoom Out"       (click)="zoomOut()">      <mat-icon>zoom_out</mat-icon></button>
+              <span class="toolbar-sep"></span>
+              <button mat-icon-button matTooltip="Brighter"       (click)="brightenUp()">   <mat-icon>brightness_high</mat-icon></button>
+              <button mat-icon-button matTooltip="Darker"         (click)="brightenDown()"> <mat-icon>brightness_low</mat-icon></button>
+              <button mat-icon-button matTooltip="Invert Colors"  (click)="toggleInvert()" [class.btn-active]="invertFilter"><mat-icon>brightness_medium</mat-icon></button>
+              <span class="toolbar-sep"></span>
+              <button mat-icon-button matTooltip="Reset View"     (click)="resetView()">    <mat-icon>restart_alt</mat-icon></button>
+              <span class="zoom-badge">{{ (zoomLevel * 100).toFixed(0) }}%</span>
+              <!-- Replace / Upload real image -->
+              <input #replaceFile type="file" accept="image/*,.dcm,.dicom" style="display:none" (change)="uploadStudyImage($event)">
+              <button mat-icon-button class="replace-btn-icon" [matTooltip]="selectedStudy!.imageUrl ? 'Replace image' : 'Upload real image'" (click)="replaceFile.click()">
+                <mat-icon>cloud_upload</mat-icon>
+              </button>
+              <button *ngIf="selectedStudy?.imageUrl" mat-icon-button class="clear-btn-icon" matTooltip="Reset to original" (click)="clearStudyImage()">
+                <mat-icon>restart_alt</mat-icon>
+              </button>
+            </div>
+
+            <!-- Canvas: Chest X-Ray SVG or uploaded image or generic -->
+            <div class="dicom-canvas" [style.cursor]="'crosshair'">
+              <!-- Uploaded image -->
+              <ng-container *ngIf="selectedStudy.imageUrl">
+                <div class="image-container" [style.transform]="'scale('+zoomLevel+')'" [style.filter]="viewerFilterStyle">
+                  <img [src]="selectedStudy.imageUrl" alt="Uploaded Study" class="uploaded-img"/>
+                </div>
+              </ng-container>
+
+              <!-- Amit Shah Chest X-Ray SVG -->
+              <ng-container *ngIf="!selectedStudy.imageUrl && selectedStudy.id === 'STU-1000'">
+                <div class="image-container" [style.transform]="'scale('+zoomLevel+')'" [style.filter]="viewerFilterStyle">
+                  <div class="xray-meta-overlay">
+                    <span>{{ selectedStudy.patientName }} · {{ selectedStudy.id }}</span>
+                    <span>{{ selectedStudy.studyDate | date:'dd MMM yyyy' }} · PA ERECT</span>
+                  </div>
+                  <svg class="xray-svg" viewBox="0 0 420 500" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="420" height="500" fill="#080808"/>
+                    <ellipse cx="128" cy="230" rx="88" ry="125" fill="#111"/>
+                    <ellipse cx="292" cy="230" rx="88" ry="125" fill="#111"/>
+                    <ellipse cx="196" cy="295" rx="68" ry="62" fill="#2a2a2a"/>
+                    <ellipse cx="162" cy="178" rx="22" ry="14" fill="#333"/>
+                    <rect x="203" y="48" width="14" height="380" rx="5" fill="#6a6a6a" opacity="0.75"/>
+                    <g opacity="0.4" fill="#888">
+                      <rect x="204" y="55"  width="12" height="9" rx="2"/>
+                      <rect x="204" y="70"  width="12" height="9" rx="2"/>
+                      <rect x="204" y="85"  width="12" height="9" rx="2"/>
+                      <rect x="204" y="100" width="12" height="9" rx="2"/>
+                      <rect x="204" y="115" width="12" height="9" rx="2"/>
+                      <rect x="204" y="130" width="12" height="9" rx="2"/>
+                      <rect x="204" y="145" width="12" height="9" rx="2"/>
+                      <rect x="204" y="160" width="12" height="9" rx="2"/>
+                      <rect x="204" y="175" width="12" height="9" rx="2"/>
+                      <rect x="204" y="190" width="12" height="9" rx="2"/>
+                      <rect x="204" y="205" width="12" height="9" rx="2"/>
+                      <rect x="204" y="220" width="12" height="9" rx="2"/>
+                      <rect x="204" y="235" width="12" height="9" rx="2"/>
+                      <rect x="204" y="250" width="12" height="9" rx="2"/>
+                      <rect x="204" y="265" width="12" height="9" rx="2"/>
+                      <rect x="204" y="280" width="12" height="9" rx="2"/>
+                      <rect x="204" y="295" width="12" height="9" rx="2"/>
+                      <rect x="204" y="310" width="12" height="9" rx="2"/>
+                      <rect x="204" y="325" width="12" height="9" rx="2"/>
+                      <rect x="204" y="340" width="12" height="9" rx="2"/>
+                    </g>
+                    <rect x="205" y="48" width="10" height="90" rx="4" fill="#444" opacity="0.9"/>
+                    <path d="M 205 138 Q 185 160 165 175 M 215 138 Q 235 160 255 175" stroke="#555" stroke-width="3" fill="none"/>
+                    <path d="M 70 88 Q 130 78 185 92"  stroke="#bbb" stroke-width="5" fill="none" stroke-linecap="round"/>
+                    <path d="M 350 88 Q 290 78 215 92" stroke="#bbb" stroke-width="5" fill="none" stroke-linecap="round"/>
+                    <path d="M 55 100 Q 42 180 60 260 Q 80 200 90 140 Z"  fill="#444" opacity="0.6"/>
+                    <path d="M 365 100 Q 378 180 360 260 Q 340 200 330 140 Z" fill="#444" opacity="0.6"/>
+                    <g stroke="#999" stroke-width="2.5" fill="none" opacity="0.85" stroke-linecap="round">
+                      <path d="M 195 100 Q 140 90  80 110 Q 45 130 42 155"/>
+                      <path d="M 195 118 Q 138 108 75 130 Q 40 152 38 178"/>
+                      <path d="M 195 136 Q 135 126 72 150 Q 36 174 35 202"/>
+                      <path d="M 195 154 Q 133 144 70 170 Q 33 196 33 226"/>
+                      <path d="M 195 172 Q 132 162 68 190 Q 32 218 33 250"/>
+                      <path d="M 195 190 Q 132 180 68 210 Q 33 240 35 274"/>
+                      <path d="M 195 208 Q 133 200 70 230 Q 36 262 38 296"/>
+                      <path d="M 195 226 Q 135 220 72 252 Q 40 284 43 318"/>
+                    </g>
+                    <g stroke="#999" stroke-width="2.5" fill="none" opacity="0.85" stroke-linecap="round">
+                      <path d="M 215 100 Q 270 90  340 110 Q 375 130 378 155"/>
+                      <path d="M 215 118 Q 272 108 345 130 Q 380 152 382 178"/>
+                      <path d="M 215 136 Q 275 126 348 150 Q 384 174 385 202"/>
+                      <path d="M 215 154 Q 277 144 350 170 Q 387 196 387 226"/>
+                      <path d="M 215 172 Q 278 162 352 190 Q 388 218 387 250"/>
+                      <path d="M 215 190 Q 278 180 352 210 Q 387 240 385 274"/>
+                      <path d="M 215 208 Q 277 200 350 230 Q 384 262 382 296"/>
+                      <path d="M 215 226 Q 275 220 348 252 Q 380 284 377 318"/>
+                    </g>
+                    <path d="M 32 356 Q 128 395 210 385 Q 292 395 388 356" stroke="#ccc" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <path d="M 32 356 L 32 390 L 72 390" stroke="#aaa" stroke-width="2" fill="none"/>
+                    <path d="M 388 356 L 388 390 L 348 390" stroke="#aaa" stroke-width="2" fill="none"/>
+                    <g stroke="#333" stroke-width="1" fill="none" opacity="0.7">
+                      <path d="M 170 175 Q 145 200 130 240 Q 118 270 112 300"/>
+                      <path d="M 165 180 Q 135 215 118 260"/>
+                      <path d="M 250 175 Q 275 200 290 240 Q 302 270 308 300"/>
+                      <path d="M 255 180 Q 285 215 302 260"/>
+                    </g>
+                    <g transform="translate(232, 268) rotate(-30)">
+                      <rect x="-2" y="-10" width="4" height="20" rx="1" fill="#00cc44" opacity="0.9"/>
+                      <rect x="-4" y="-10" width="8" height="3" rx="1" fill="#00cc44" opacity="0.9"/>
+                      <rect x="-4" y="7"  width="8" height="3" rx="1" fill="#00cc44" opacity="0.9"/>
+                    </g>
+                    <text x="12"  y="20"  font-size="9" fill="#555" font-family="monospace">R</text>
+                    <text x="404" y="20"  font-size="9" fill="#555" font-family="monospace" text-anchor="end">L</text>
+                    <text x="12"  y="490" font-size="7" fill="#444" font-family="monospace">kVp:120 mAs:4 SID:180cm</text>
+                    <text x="12"  y="480" font-size="7" fill="#444" font-family="monospace">STU-1000 · PA ERECT</text>
+                  </svg>
+                </div>
+              </ng-container>
+
+              <!-- In-viewer upload zone for studies without a real image -->
+              <ng-container *ngIf="!selectedStudy.imageUrl && selectedStudy.id !== 'STU-1000'">
+                <input #viewerFile type="file" accept="image/*,.dcm,.dicom" style="display:none" (change)="uploadStudyImage($event)">
+                <div class="viewer-upload-zone" (click)="viewerFile.click()">
+                  <mat-icon class="vuz-icon">{{ modalityIcon(selectedStudy.modality) }}</mat-icon>
+                  <p class="vuz-title">Upload {{ selectedStudy.modality }} Image</p>
+                  <p class="vuz-modality">{{ selectedStudy.bodyPart }} · {{ selectedStudy.patientName }}</p>
+                  <p class="vuz-note">JPG · PNG · DICOM — AI Intelligent Analyzer will generate a full report</p>
+                  <button mat-raised-button class="vuz-btn" (click)="$event.stopPropagation(); viewerFile.click()">
+                    <mat-icon>cloud_upload</mat-icon> Upload &amp; Analyze
+                  </button>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Report panel -->
+          <div class="report-section">
+            <div class="report-header">
+              <span class="report-title">Radiology Report</span>
+              <button mat-stroked-button class="btn-ai" (click)="analyzeWithAI()" [disabled]="aiAnalyzing">
+                <mat-spinner *ngIf="aiAnalyzing" diameter="14" style="display:inline-block;margin-right:4px"></mat-spinner>
+                <mat-icon *ngIf="!aiAnalyzing">smart_toy</mat-icon>
+                AI Draft
+              </button>
+            </div>
+
+            <div class="report-scroll">
+              <ng-container *ngIf="selectedStudy.findings && !aiReport">
+                <div class="report-section-label">Findings</div>
+                <div class="report-text">{{ selectedStudy.findings }}</div>
+                <div class="report-section-label" *ngIf="selectedStudy.impression">Impression</div>
+                <div class="report-text" *ngIf="selectedStudy.impression">{{ selectedStudy.impression }}</div>
+              </ng-container>
+
+              <div *ngIf="aiReport" class="ai-report">
+                <div class="ai-report-badge"><mat-icon>smart_toy</mat-icon> AI Draft (Review before signing)</div>
+                <pre class="report-text">{{ aiReport }}</pre>
+              </div>
+
+              <div *ngIf="!selectedStudy.findings && !aiReport && !aiAnalyzing" class="no-report">
+                <mat-icon>description</mat-icon>
+                <p>No report yet. Click "AI Draft" for an AI-assisted report.</p>
+              </div>
+
+              <div *ngIf="aiAnalyzing" class="no-report">
+                <mat-spinner diameter="28"></mat-spinner>
+                <p>Generating AI radiology report...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #noStudySelected>
+        <div class="viewer-empty">
+          <mat-icon>biotech</mat-icon>
+          <p>Select a study from the list to open the viewer</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" *ngIf="uploadModalOpen" (click)="uploadModalOpen = false">
+  <div class="upload-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span>Upload DICOM / Imaging Study</span>
+      <button mat-icon-button (click)="uploadModalOpen = false"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="upload-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Patient</mat-label>
+          <mat-select [(ngModel)]="uploadForm.patientName" (ngModelChange)="onPatientSelect($event)">
+            <mat-option *ngFor="let p of patientsList" [value]="p.name">{{ p.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Patient ID</mat-label><input matInput [(ngModel)]="uploadForm.patientId" readonly></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Modality</mat-label>
+          <mat-select [(ngModel)]="uploadForm.modality">
+            <mat-option *ngFor="let m of modalities" [value]="m">{{ m }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Body Part</mat-label>
+          <mat-select [(ngModel)]="uploadForm.bodyPart">
+            <mat-option *ngFor="let b of bodyParts" [value]="b">{{ b }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Referred By</mat-label><input matInput [(ngModel)]="uploadForm.referredBy"></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Urgency</mat-label>
+          <mat-select [(ngModel)]="uploadForm.urgency">
+            <mat-option value="routine">Routine</mat-option>
+            <mat-option value="urgent">Urgent</mat-option>
+            <mat-option value="stat">STAT</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Image upload area -->
+      <div class="image-upload-zone" [class.has-image]="uploadedImageUrl" (click)="fileInput.click()">
+        <input #fileInput type="file" accept="image/*,.dcm,.dicom" style="display:none" (change)="handleImageUpload($event)">
+        <ng-container *ngIf="!uploadedImageUrl">
+          <mat-icon>cloud_upload</mat-icon>
+          <p>Click to upload X-Ray / CT / MRI image</p>
+          <span class="drop-note">Supports JPG, PNG, DICOM · Max 100MB</span>
+        </ng-container>
+        <ng-container *ngIf="uploadedImageUrl">
+          <img [src]="uploadedImageUrl" class="preview-img" alt="Preview">
+          <span class="preview-label">{{ uploadedImageFile?.name }}</span>
+        </ng-container>
+      </div>
+
+      <!-- AI Analysis of uploaded image -->
+      <div *ngIf="uploadedImageUrl" class="ai-analyze-row">
+        <button mat-stroked-button class="btn-ai-analyze" (click)="analyzeUploadedImage()" [disabled]="aiUploadAnalyzing">
+          <mat-spinner *ngIf="aiUploadAnalyzing" diameter="14" style="display:inline-block;margin-right:5px"></mat-spinner>
+          <mat-icon *ngIf="!aiUploadAnalyzing">smart_toy</mat-icon>
+          {{ aiUploadAnalyzing ? 'Analyzing...' : 'AI Analyze Image' }}
+        </button>
+        <span class="ai-analyze-note">AI will generate a radiology report for this image</span>
+      </div>
+
+      <div *ngIf="aiUploadReport" class="ai-upload-report">
+        <div class="ai-report-badge"><mat-icon>smart_toy</mat-icon> AI Draft Report (for review)</div>
+        <pre class="report-text">{{ aiUploadReport }}</pre>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button mat-button (click)="uploadModalOpen = false">Cancel</button>
+      <button mat-raised-button class="btn-upload" (click)="uploadStudy()">
+        <mat-icon>cloud_upload</mat-icon> Add to Worklist
+      </button>
+    </div>
+  </div>
+</div>

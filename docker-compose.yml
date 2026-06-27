@@ -1,0 +1,441 @@
+version: '3.9'
+
+# MedCare 360 Enterprise — Full Stack Docker Compose
+# Usage:
+#   Full stack:     docker-compose --profile monitoring --profile logging up -d
+#   Dev only:       docker-compose up -d
+#   With tracing:   docker-compose --profile tracing up -d
+
+x-common-env: &common-env
+  NODE_ENV: ${NODE_ENV:-production}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  # Secrets: MUST be set in .env — required variables (fail if not set)
+  REDIS_PASSWORD: "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"
+  KAFKA_BROKERS: kafka:9092
+  MONGODB_URI: "mongodb://admin:${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}@mongodb:27017/medcare360?authSource=admin"
+  JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+  JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env (min 32 chars)}"
+  JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}"
+  JWT_ACCESS_EXPIRES: 15m
+  JWT_REFRESH_EXPIRES: 7d
+  GROQ_API_KEY: "${GROQ_API_KEY:?Set GROQ_API_KEY in .env}"
+  GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+  FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - medcare-network
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # ── Infrastructure ──────────────────────────────────────────
+
+  mongodb:
+    <<: *service-defaults
+    image: mongo:7.0
+    container_name: medcare-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-medcare_secret_2024}
+      MONGO_INITDB_DATABASE: medcare360
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./devops/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    <<: *service-defaults
+    image: redis:7.2-alpine
+    container_name: medcare-redis
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-medcare_redis_2024}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-medcare_redis_2024}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    <<: *service-defaults
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: medcare-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+
+  kafka:
+    <<: *service-defaults
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: medcare-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kafka-ui:
+    <<: *service-defaults
+    image: provectuslabs/kafka-ui:latest
+    container_name: medcare-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: medcare360
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    profiles:
+      - dev
+
+  # ── Application Services ────────────────────────────────────
+
+  api-gateway:
+    <<: *service-defaults
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: medcare-api-gateway
+    image: medcare360/api-gateway:${VERSION:-latest}
+    environment:
+      <<: *common-env
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:3001
+      PATIENT_SERVICE_URL: http://backend:5000
+      DOCTOR_SERVICE_URL: http://backend:5000
+      APPOINTMENT_SERVICE_URL: http://backend:5000
+      PHARMACY_SERVICE_URL: http://backend:5000
+      BILLING_SERVICE_URL: http://backend:5000
+      LAB_SERVICE_URL: http://backend:5000
+      AMBULANCE_SERVICE_URL: http://backend:5000
+      NOTIFICATION_SERVICE_URL: http://notification-service:3009
+      AI_SERVICE_URL: http://ai-service:3010
+      ANALYTICS_SERVICE_URL: http://backend:5000
+      INVENTORY_SERVICE_URL: http://backend:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health',r=>process.exit(r.statusCode===200?0:1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    <<: *service-defaults
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: medcare-backend
+    image: medcare360/backend:${VERSION:-latest}
+    environment:
+      <<: *common-env
+      PORT: 5000
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@medcare360.com}
+    ports:
+      - "5000:5000"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health',r=>process.exit(r.statusCode===200?0:1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  auth-service:
+    <<: *service-defaults
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: medcare-auth-service
+    image: medcare360/auth-service:${VERSION:-latest}
+    environment:
+      <<: *common-env
+      PORT: 3001
+      MONGODB_URI: mongodb://admin:${MONGO_ROOT_PASSWORD:-medcare_secret_2024}@mongodb:27017/medcare360_auth?authSource=admin
+    ports:
+      - "3001:3001"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ai-service:
+    <<: *service-defaults
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    container_name: medcare-ai-service
+    image: medcare360/ai-service:${VERSION:-latest}
+    environment:
+      <<: *common-env
+      PORT: 3010
+    ports:
+      - "3010:3010"
+    volumes:
+      - ai_uploads:/app/uploads
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  notification-service:
+    <<: *service-defaults
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: medcare-notification-service
+    image: medcare360/notification-service:${VERSION:-latest}
+    environment:
+      <<: *common-env
+      PORT: 3009
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@medcare360.com}
+    ports:
+      - "3009:3009"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    <<: *service-defaults
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: medcare-frontend
+    image: medcare360/frontend:${VERSION:-latest}
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - api-gateway
+
+  # ── Monitoring ──────────────────────────────────────────────
+
+  prometheus:
+    <<: *service-defaults
+    image: prom/prometheus:v2.48.0
+    container_name: medcare-prometheus
+    volumes:
+      - ./devops/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./devops/monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    ports:
+      - "9090:9090"
+    profiles:
+      - monitoring
+
+  grafana:
+    <<: *service-defaults
+    image: grafana/grafana:10.2.0
+    container_name: medcare-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-MedCare@Grafana2024}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./devops/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./devops/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+  alertmanager:
+    <<: *service-defaults
+    image: prom/alertmanager:v0.26.0
+    container_name: medcare-alertmanager
+    volumes:
+      - ./devops/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+    profiles:
+      - monitoring
+
+  jaeger:
+    <<: *service-defaults
+    image: jaegertracing/all-in-one:1.52
+    container_name: medcare-jaeger
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
+    profiles:
+      - tracing
+
+  # ── ELK Stack ───────────────────────────────────────────────
+
+  elasticsearch:
+    <<: *service-defaults
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: medcare-elasticsearch
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      xpack.security.enabled: "false"
+      xpack.security.enrollment.enabled: "false"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    profiles:
+      - logging
+
+  kibana:
+    <<: *service-defaults
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: medcare-kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    profiles:
+      - logging
+
+  logstash:
+    <<: *service-defaults
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: medcare-logstash
+    volumes:
+      - ./devops/monitoring/elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - backend_logs:/logs:ro
+    environment:
+      LS_JAVA_OPTS: "-Xmx512m -Xms512m"
+    depends_on:
+      - elasticsearch
+    profiles:
+      - logging
+
+  filebeat:
+    <<: *service-defaults
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: medcare-filebeat
+    user: root
+    volumes:
+      - ./devops/monitoring/elk/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - backend_logs:/logs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - elasticsearch
+    profiles:
+      - logging
+
+  # ── Dev Tools ───────────────────────────────────────────────
+
+  mongo-express:
+    <<: *service-defaults
+    image: mongo-express:1.0.2
+    container_name: medcare-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD:-medcare_secret_2024}
+      ME_CONFIG_MONGODB_URL: mongodb://admin:${MONGO_ROOT_PASSWORD:-medcare_secret_2024}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS:-admin123}
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    profiles:
+      - dev
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+  redis_data:
+  kafka_data:
+  zookeeper_data:
+  zookeeper_log:
+  backend_uploads:
+  backend_logs:
+  ai_uploads:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
+
+networks:
+  medcare-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

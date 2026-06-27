@@ -1,0 +1,293 @@
+<div class="analyzer-wrap">
+
+  <!-- Analyzer Type Selector -->
+  <div class="type-selector">
+    <button *ngFor="let a of analyzers"
+      class="type-pill"
+      [class.active]="selectedType === a.type"
+      [style.--pill-color]="a.color"
+      (click)="selectType(a.type)">
+      <mat-icon>{{ a.icon }}</mat-icon>
+      <span>{{ a.name }}</span>
+    </button>
+  </div>
+
+  <div class="analyzer-body">
+    <!-- Left: Input Form -->
+    <div class="input-panel">
+      <div class="panel-header">
+        <mat-icon [style.color]="currentAnalyzer.color">{{ currentAnalyzer.icon }}</mat-icon>
+        <div>
+          <h3>{{ currentAnalyzer.name }}</h3>
+          <p>Enter available test values — skip fields that weren't measured</p>
+        </div>
+      </div>
+
+      <!-- Lab Values Grid -->
+      <div class="values-grid">
+        <div class="value-field" *ngFor="let field of currentAnalyzer.fields">
+          <label class="field-label">{{ field.label }}</label>
+          <div class="input-with-unit">
+            <input type="number" class="val-input" [(ngModel)]="values[field.key]"
+              [placeholder]="'e.g. —'" step="any" min="0">
+            <span class="unit-badge">{{ field.unit }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patient Context -->
+      <div class="context-row">
+        <div class="ctx-field">
+          <label>Patient Age</label>
+          <input type="number" class="ctx-input" [(ngModel)]="patientAge" placeholder="Years" min="0" max="120">
+        </div>
+        <div class="ctx-field">
+          <label>Gender</label>
+          <select class="ctx-input ctx-select" [(ngModel)]="patientGender">
+            <option value="">Not specified</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="ctx-field ctx-checkbox" *ngIf="patientGender === 'female'">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="isPregnant"> Pregnant
+          </label>
+          <small>Adjusts reference ranges for pregnancy</small>
+        </div>
+        <div class="ctx-field ctx-notes">
+          <label>Clinical Notes</label>
+          <input type="text" class="ctx-input" [(ngModel)]="clinicalNotes"
+            placeholder="Symptoms, medications, history...">
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-row">
+        <button class="btn-analyze" (click)="analyze()" [disabled]="loading">
+          <mat-spinner *ngIf="loading" diameter="18" strokeWidth="2"></mat-spinner>
+          <mat-icon *ngIf="!loading">biotech</mat-icon>
+          <span>{{ loading ? 'Analyzing...' : 'Run AI Analysis' }}</span>
+        </button>
+        <button class="btn-clear" (click)="clearAll()" [disabled]="loading">
+          <mat-icon>restart_alt</mat-icon> Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Results Panel -->
+    <div class="results-panel" [class.has-result]="result">
+
+      <!-- Empty state -->
+      <div class="results-empty" *ngIf="!result && !loading">
+        <div class="empty-icon">
+          <mat-icon>biotech</mat-icon>
+        </div>
+        <h4>AI Lab Report Analyzer</h4>
+        <p>Enter lab values on the left and click <strong>Run AI Analysis</strong> to get an instant clinical interpretation powered by Groq LLaMA 3.3-70B.</p>
+        <ul class="feature-list">
+          <li><mat-icon>check_circle</mat-icon> Detects abnormal values with severity</li>
+          <li><mat-icon>check_circle</mat-icon> Identifies possible conditions</li>
+          <li><mat-icon>check_circle</mat-icon> Flags critical panic values instantly</li>
+          <li><mat-icon>check_circle</mat-icon> Recommends follow-up actions</li>
+          <li><mat-icon>check_circle</mat-icon> Provides confidence scoring</li>
+        </ul>
+      </div>
+
+      <!-- Loading skeleton -->
+      <div class="results-loading" *ngIf="loading">
+        <mat-spinner diameter="48" strokeWidth="3"></mat-spinner>
+        <p>Running AI analysis with LLaMA 3.3-70B…</p>
+        <span>Interpreting {{ currentAnalyzer.name }}</span>
+      </div>
+
+      <!-- Results -->
+      <ng-container *ngIf="result && !loading">
+
+        <!-- Result Header -->
+        <div class="result-header" [style.--accent]="currentAnalyzer.color">
+          <div class="result-title">
+            <mat-icon [style.color]="currentAnalyzer.color">{{ currentAnalyzer.icon }}</mat-icon>
+            <div>
+              <h3>{{ result.analyzerName }}</h3>
+              <span class="result-meta">
+                {{ result.analyzedAt | date:'medium' }} · {{ result.model }}
+                <span *ngIf="result.patientContext?.isPregnant" class="pregnancy-tag">🤰 Pregnancy ranges</span>
+              </span>
+            </div>
+          </div>
+          <div class="header-badges">
+            <div class="risk-badge" *ngIf="getRiskBadge()" [style.background]="getRiskBadge()!.color + '22'" [style.color]="getRiskBadge()!.color" [style.border-color]="getRiskBadge()!.color + '44'">
+              {{ getRiskBadge()!.label | titlecase }}
+            </div>
+            <button mat-icon-button matTooltip="Print Report" (click)="printReport()" class="print-btn">
+              <mat-icon>print</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Clinical Summary Card ─────────────────────────── -->
+        <div class="clinical-summary-card">
+          <div class="summary-stat">
+            <div class="summary-num" [style.color]="getSeverityScoreColor()">{{ getSeverityScore() }}</div>
+            <div class="summary-lbl">Severity Score</div>
+            <div class="summary-sub" [style.color]="getSeverityScoreColor()">{{ getSeverityScoreLabel() }}</div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-stat">
+            <div class="summary-num" style="color:#dc2626">{{ getCriticalCount() }}</div>
+            <div class="summary-lbl">Critical Values</div>
+            <div class="summary-sub" style="color:#dc2626">{{ getCriticalCount() > 0 ? 'Immediate action' : 'None detected' }}</div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-stat">
+            <div class="summary-num" style="color:#d97706">{{ getAbnormalCount() }}</div>
+            <div class="summary-lbl">Abnormal Values</div>
+            <div class="summary-sub" style="color:#d97706">{{ getAbnormalCount() > 0 ? 'Requires review' : 'All in range' }}</div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-stat">
+            <div class="summary-num" [style.color]="getConfidenceColor()">{{ getConfidence() }}%</div>
+            <div class="summary-lbl">AI Confidence</div>
+            <div class="summary-sub" [style.color]="getConfidenceColor()">{{ getConfidence() >= 80 ? 'High' : getConfidence() >= 60 ? 'Moderate' : 'Low' }}</div>
+          </div>
+        </div>
+
+        <!-- Critical Values Alert -->
+        <div class="critical-alert" *ngIf="result.criticalValues?.length">
+          <div class="critical-header">
+            <mat-icon>warning</mat-icon>
+            <strong>Critical Values Detected ({{ result.criticalValues.length }})</strong>
+          </div>
+          <div class="critical-chips">
+            <span class="critical-chip" *ngFor="let cv of result.criticalValues"
+              [class.critical-high]="cv.severity === 'CRITICAL HIGH'"
+              [class.critical-low]="cv.severity === 'CRITICAL LOW'">
+              {{ formatKey(cv.parameter) }}: {{ cv.value }} {{ cv.unit }}
+              <em>{{ cv.severity }}</em>
+            </span>
+          </div>
+        </div>
+
+        <!-- Confidence Meter -->
+        <div class="confidence-section">
+          <div class="confidence-label">
+            <span>Analysis Confidence</span>
+            <strong [style.color]="getConfidenceColor()">{{ getConfidence() }}%</strong>
+          </div>
+          <div class="confidence-track">
+            <div class="confidence-fill"
+              [style.width.%]="getConfidence()"
+              [style.background]="getConfidenceColor()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Special indicators -->
+        <div class="special-row" *ngIf="ckdStage() || riskScore() !== null || liverPattern()">
+          <div class="special-chip" *ngIf="ckdStage()">
+            <mat-icon>water_drop</mat-icon>
+            <span>CKD Stage {{ ckdStage() }}</span>
+          </div>
+          <div class="special-chip" *ngIf="riskScore() !== null">
+            <mat-icon>show_chart</mat-icon>
+            <span>Risk Score: {{ riskScore() }}/100</span>
+          </div>
+          <div class="special-chip" *ngIf="liverPattern()">
+            <mat-icon>science</mat-icon>
+            <span>{{ liverPattern() | titlecase }} Pattern</span>
+          </div>
+        </div>
+
+        <!-- Urgent Flags -->
+        <div class="result-section" *ngIf="result.analysis?.urgentFlags?.length">
+          <div class="section-title urgent">
+            <mat-icon>priority_high</mat-icon> Urgent Flags
+          </div>
+          <ul class="flag-list">
+            <li *ngFor="let flag of result.analysis.urgentFlags">
+              <mat-icon>error_outline</mat-icon>{{ asString(flag) }}
+            </li>
+          </ul>
+        </div>
+
+        <!-- Findings — enhanced with reference range display -->
+        <div class="result-section" *ngIf="result.analysis?.findings?.length">
+          <div class="section-title">
+            <mat-icon>search</mat-icon> Findings
+            <span class="section-sub">Value · Reference Range · Status</span>
+          </div>
+          <div class="findings-table">
+            <ng-container *ngFor="let f of result.analysis.findings">
+              <div class="finding-row" *ngIf="f?.parameter || f?.finding"
+                   [class.row-normal]="f.severity === 'normal'"
+                   [class.row-mild]="f.severity === 'mild'"
+                   [class.row-moderate]="f.severity === 'moderate'"
+                   [class.row-severe]="f.severity === 'severe'">
+                <div class="finding-left">
+                  <div class="finding-param">{{ formatKey(f.parameter || f.finding) }}</div>
+                  <div class="finding-value-row">
+                    <span class="finding-val-num">{{ f.value }} <small>{{ f.unit }}</small></span>
+                    <span class="ref-range" *ngIf="f.normalRange">Ref: {{ f.normalRange }}</span>
+                  </div>
+                </div>
+                <div class="finding-right">
+                  <span class="sev-chip" [class]="getSeverityClass(f.severity)">
+                    <mat-icon>{{ f.severity === 'normal' ? 'check_circle' : f.severity === 'mild' ? 'info' : f.severity === 'moderate' ? 'warning' : 'dangerous' }}</mat-icon>
+                    {{ f.severity | titlecase }}
+                  </span>
+                </div>
+                <div class="finding-interp" *ngIf="f.interpretation || f.note">
+                  {{ f.interpretation || f.note }}
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Conditions -->
+        <div class="result-section" *ngIf="result.analysis?.conditions?.length">
+          <div class="section-title">
+            <mat-icon>medical_information</mat-icon> Possible Conditions
+          </div>
+          <ul class="conditions-list">
+            <li *ngFor="let c of result.analysis.conditions">
+              <ng-container *ngIf="c?.name || c?.condition; else plainCondition">
+                <div class="condition-item">
+                  <mat-icon>circle</mat-icon>
+                  <span class="cond-name">{{ c.name || c.condition }}</span>
+                  <span class="cond-conf" *ngIf="c.confidence">{{ c.confidence }}% confident</span>
+                  <span class="cond-note" *ngIf="c.reasoning">{{ c.reasoning }}</span>
+                </div>
+              </ng-container>
+              <ng-template #plainCondition>
+                <div class="condition-item"><mat-icon>circle</mat-icon><span>{{ c }}</span></div>
+              </ng-template>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="result-section" *ngIf="result.analysis?.recommendations?.length">
+          <div class="section-title recommendations">
+            <mat-icon>recommend</mat-icon> Recommendations
+          </div>
+          <ul class="rec-list">
+            <li *ngFor="let r of result.analysis.recommendations">
+              <mat-icon>arrow_forward</mat-icon>
+              <span>{{ asString(r) }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+          <mat-icon>info_outline</mat-icon>
+          This AI analysis is for clinical decision support only. Always verify findings with a qualified physician.
+        </div>
+
+      </ng-container>
+    </div>
+  </div>
+</div>

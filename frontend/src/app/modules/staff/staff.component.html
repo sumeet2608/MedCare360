@@ -1,0 +1,60 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Staff Management</h1><p>{{ total }} staff members</p></div>
+    <button mat-raised-button color="primary" (click)="showAddForm=!showAddForm"><mat-icon>person_add</mat-icon> Add Staff</button>
+  </div>
+
+  <mat-card *ngIf="showAddForm" style="margin-bottom:16px;padding:20px;max-width:900px">
+    <mat-card-header><mat-card-title>Add New Staff Member</mat-card-title></mat-card-header>
+    <mat-card-content>
+      <div class="form-row">
+        <mat-form-field appearance="outline"><mat-label>First Name *</mat-label><input matInput [(ngModel)]="newStaff.firstName"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Last Name *</mat-label><input matInput [(ngModel)]="newStaff.lastName"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Email *</mat-label><input matInput type="email" [(ngModel)]="newStaff.email"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Phone</mat-label><input matInput [(ngModel)]="newStaff.phone"></mat-form-field>
+      </div>
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Role *</mat-label>
+          <mat-select [(ngModel)]="newStaff.role">
+            <mat-option *ngFor="let r of roles" [value]="r">{{ r | titlecase }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Department *</mat-label><input matInput [(ngModel)]="newStaff.department"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Designation *</mat-label><input matInput [(ngModel)]="newStaff.designation"></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Shift</mat-label>
+          <mat-select [(ngModel)]="newStaff.shift">
+            <mat-option *ngFor="let s of shifts" [value]="s">{{ s | titlecase }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <button mat-raised-button color="primary" (click)="addStaff()" [disabled]="!newStaff.firstName||!newStaff.email"><mat-icon>save</mat-icon> Add Staff</button>
+        <button mat-stroked-button (click)="showAddForm=false">Cancel</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <app-data-grid
+    [columns]="columns"
+    [rows]="staffList"
+    [loading]="loading"
+    searchPlaceholder="Search name, department..."
+    exportFilename="staff"
+    emptyMessage="No staff members found">
+
+    <ng-template appGridCell="staffId" let-s><span style="font-size:0.75rem;font-weight:600;color:var(--primary)">{{ s.staffId }}</span></ng-template>
+    <ng-template appGridCell="fullName" let-s>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:#6a1b9a;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem">{{ s.user?.firstName?.[0] }}</div>
+        <div><div style="font-weight:500">{{ s.user?.firstName }} {{ s.user?.lastName }}</div><div style="font-size:0.75rem;color:#666">{{ s.user?.email }}</div></div>
+      </div>
+    </ng-template>
+    <ng-template appGridCell="role" let-s>{{ s.role | titlecase }}</ng-template>
+    <ng-template appGridCell="status" let-s><span class="status-chip" [class]="getStatusClass(s.status)">{{ s.status | titlecase }}</span></ng-template>
+    <ng-template appGridCell="actions" let-s>
+      <button mat-icon-button color="warn" (click)="$event.stopPropagation(); delete(s._id)"><mat-icon>delete</mat-icon></button>
+    </ng-template>
+  </app-data-grid>
+</div>

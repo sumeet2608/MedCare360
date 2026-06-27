@@ -1,0 +1,87 @@
+<div class="grid-wrap">
+  <div class="grid-toolbar">
+    <div class="search-box">
+      <mat-icon>search</mat-icon>
+      <input [value]="searchTerm" (input)="onSearch($any($event.target).value)" [placeholder]="searchPlaceholder">
+    </div>
+
+    <div class="toolbar-actions">
+      <span class="result-count">{{ filteredRows.length }} records</span>
+
+      <div class="col-menu-wrap">
+        <button mat-stroked-button (click)="showColumnMenu = !showColumnMenu">
+          <mat-icon>view_column</mat-icon> Columns
+        </button>
+        <div class="col-menu" *ngIf="showColumnMenu">
+          <label *ngFor="let c of columns">
+            <input type="checkbox" [checked]="visibleKeys.has(c.key)" (change)="toggleColumn(c.key)">
+            {{ c.label }}
+          </label>
+        </div>
+      </div>
+
+      <button mat-stroked-button (click)="exportCsv()"><mat-icon>download</mat-icon> Export CSV</button>
+    </div>
+  </div>
+
+  <div class="grid-scroll-area">
+    <table class="data-grid-table">
+      <thead>
+        <tr>
+          <th class="select-col" *ngIf="selectable">
+            <input type="checkbox" [checked]="allPagedSelected" (change)="toggleSelectAllPaged()">
+          </th>
+          <th *ngFor="let c of visibleColumns" [class.sortable]="c.sortable" [style.width]="c.width" (click)="toggleSort(c)">
+            {{ c.label }}
+            <mat-icon *ngIf="c.sortable && sortKey === c.key" class="sort-icon">{{ sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+          </th>
+        </tr>
+      </thead>
+      <tbody *ngIf="!loading && !virtualScroll">
+        <tr *ngFor="let row of pagedRows" (click)="rowClick.emit(row)">
+          <td class="select-col" *ngIf="selectable" (click)="$event.stopPropagation()">
+            <input type="checkbox" [checked]="isSelected(row)" (change)="toggleRow(row, $event)">
+          </td>
+          <td *ngFor="let c of visibleColumns">
+            <ng-container *ngIf="templateMap[c.key]; else plainCell">
+              <ng-container *ngTemplateOutlet="templateMap[c.key].template; context: { $implicit: row, row: row }"></ng-container>
+            </ng-container>
+            <ng-template #plainCell>{{ formatValue(row, c) }}</ng-template>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <cdk-virtual-scroll-viewport *ngIf="!loading && virtualScroll" [itemSize]="virtualItemSize" class="virtual-viewport">
+      <table class="data-grid-table">
+        <tbody>
+          <tr *cdkVirtualFor="let row of filteredRows" (click)="rowClick.emit(row)" [style.height.px]="virtualItemSize">
+            <td class="select-col" *ngIf="selectable" (click)="$event.stopPropagation()">
+              <input type="checkbox" [checked]="isSelected(row)" (change)="toggleRow(row, $event)">
+            </td>
+            <td *ngFor="let c of visibleColumns">
+              <ng-container *ngIf="templateMap[c.key]; else plainCellV">
+                <ng-container *ngTemplateOutlet="templateMap[c.key].template; context: { $implicit: row, row: row }"></ng-container>
+              </ng-container>
+              <ng-template #plainCellV>{{ formatValue(row, c) }}</ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </cdk-virtual-scroll-viewport>
+
+    <div class="grid-loading" *ngIf="loading"><mat-spinner diameter="40"></mat-spinner></div>
+    <div class="grid-empty" *ngIf="!loading && filteredRows.length === 0">
+      <mat-icon>inbox</mat-icon>
+      <p>{{ emptyMessage }}</p>
+    </div>
+  </div>
+
+  <div class="grid-pager" *ngIf="!virtualScroll && filteredRows.length > 0">
+    <span>Page {{ pageIndex + 1 }} of {{ totalPages }}</span>
+    <div class="pager-btns">
+      <button mat-icon-button (click)="prevPage()" [disabled]="pageIndex === 0"><mat-icon>chevron_left</mat-icon></button>
+      <button mat-icon-button (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1"><mat-icon>chevron_right</mat-icon></button>
+    </div>
+  </div>
+</div>

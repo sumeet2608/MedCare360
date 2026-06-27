@@ -1,0 +1,50 @@
+{
+  "name": "medcare360-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "node node_modules/@angular/cli/bin/ng.js serve",
+    "build": "node node_modules/@angular/cli/bin/ng.js build",
+    "build:prod": "node node_modules/@angular/cli/bin/ng.js build --configuration production",
+    "test": "node node_modules/@angular/cli/bin/ng.js test",
+    "lint": "node node_modules/@angular/cli/bin/ng.js lint"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "^16.2.0",
+    "@angular/cdk": "^16.2.0",
+    "@angular/common": "^16.2.0",
+    "@angular/compiler": "^16.2.0",
+    "@angular/core": "^16.2.0",
+    "@angular/forms": "^16.2.0",
+    "@angular/material": "^16.2.0",
+    "@angular/platform-browser": "^16.2.0",
+    "@angular/platform-browser-dynamic": "^16.2.0",
+    "@angular/router": "^16.2.0",
+    "chart.js": "^4.4.0",
+    "echarts": "^6.1.0",
+    "leaflet": "^1.9.4",
+    "ng2-charts": "^5.0.3",
+    "ngx-echarts": "^16.2.0",
+    "rxjs": "~7.8.0",
+    "socket.io-client": "^4.8.3",
+    "tesseract.js": "^7.0.0",
+    "tslib": "^2.6.0",
+    "zone.js": "~0.13.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^16.2.0",
+    "@angular/cli": "^16.2.0",
+    "@angular/compiler-cli": "^16.2.0",
+    "@types/jasmine": "~5.1.0",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^18.19.130",
+    "jasmine-core": "~5.1.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "^5.1.6"
+  }
+}

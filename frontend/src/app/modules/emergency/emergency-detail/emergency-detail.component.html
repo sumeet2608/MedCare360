@@ -1,0 +1,95 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Emergency Guide</h1></div>
+    <button mat-stroked-button routerLink="/emergency"><mat-icon>arrow_back</mat-icon> All Emergencies</button>
+  </div>
+
+  <div class="disclaimer-banner" style="margin-bottom:20px">
+    <strong>⚠ ALWAYS CALL 108/112 FIRST</strong> — This guide provides educational first aid information only.
+    Never delay calling emergency services. Always seek professional medical care immediately.
+  </div>
+
+  <div *ngIf="loading" style="text-align:center;padding:80px"><mat-spinner diameter="56"></mat-spinner></div>
+
+  <div *ngIf="!loading && guidance" class="guidance-content">
+    <div class="guidance-title">
+      <mat-icon style="color:#f44336;font-size:36px;width:36px;height:36px">emergency</mat-icon>
+      <h2>{{ guidance.title }}</h2>
+    </div>
+
+    <div class="sections-grid">
+      <!-- Warning Signs -->
+      <mat-card class="section-card warning">
+        <mat-card-header>
+          <mat-icon mat-card-avatar style="color:#f44336">warning</mat-icon>
+          <mat-card-title>Warning Signs</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul class="guidance-list">
+            <li *ngFor="let sign of guidance.warningSigns"><mat-icon>circle</mat-icon>{{ sign }}</li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Immediate Actions -->
+      <mat-card class="section-card actions">
+        <mat-card-header>
+          <mat-icon mat-card-avatar style="color:var(--primary)">play_circle</mat-icon>
+          <mat-card-title>Immediate Actions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ol class="guidance-list numbered">
+            <li *ngFor="let action of guidance.immediateActions; let i=index">
+              <span class="step-num">{{ i+1 }}</span>{{ action }}
+            </li>
+          </ol>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Family Guidance -->
+      <mat-card class="section-card family">
+        <mat-card-header>
+          <mat-icon mat-card-avatar style="color:var(--accent)">group</mat-icon>
+          <mat-card-title>Family Member Guidance</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul class="guidance-list">
+            <li *ngFor="let item of guidance.familyGuidance"><mat-icon>check_circle</mat-icon>{{ item }}</li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Do NOT -->
+      <mat-card class="section-card donot">
+        <mat-card-header>
+          <mat-icon mat-card-avatar style="color:#c62828">block</mat-icon>
+          <mat-card-title>What NOT To Do</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul class="guidance-list">
+            <li *ngFor="let item of guidance.doNot"><mat-icon style="color:#f44336">cancel</mat-icon>{{ item }}</li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Ambulance CTA -->
+    <mat-card class="ambulance-cta">
+      <mat-icon>local_shipping</mat-icon>
+      <div>
+        <h3>When to Call Ambulance</h3>
+        <p>{{ guidance.callAmbulance }}</p>
+      </div>
+      <div class="sos-numbers">
+        <a href="tel:108" mat-raised-button style="background:#f44336;color:white;font-size:1.1rem">📞 108</a>
+        <a href="tel:112" mat-raised-button style="background:#c62828;color:white;font-size:1.1rem">📞 112</a>
+      </div>
+    </mat-card>
+
+    <!-- Final Disclaimer -->
+    <div class="final-disclaimer">
+      <mat-icon>info</mat-icon>
+      <p><strong>Disclaimer:</strong> {{ guidance.disclaimer }}</p>
+    </div>
+  </div>
+</div>

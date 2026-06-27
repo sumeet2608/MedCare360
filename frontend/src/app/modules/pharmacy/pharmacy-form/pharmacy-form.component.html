@@ -1,0 +1,57 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>{{ isEdit ? 'Edit Medicine' : 'Add Medicine' }}</h1></div>
+    <button mat-stroked-button routerLink="/pharmacy"><mat-icon>arrow_back</mat-icon> Back</button>
+  </div>
+  <div *ngIf="loading" style="text-align:center;padding:60px"><mat-spinner diameter="48"></mat-spinner></div>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!loading">
+    <mat-card style="max-width:860px;padding:24px;margin-bottom:16px">
+      <mat-card-header><mat-card-title>Medicine Information</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <div class="form-row">
+          <mat-form-field appearance="outline"><mat-label>Medicine Name *</mat-label><input matInput formControlName="name"><mat-error>Required</mat-error></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Generic Name *</mat-label><input matInput formControlName="genericName"><mat-error>Required</mat-error></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Brand</mat-label><input matInput formControlName="brand"></mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Category *</mat-label>
+            <mat-select formControlName="category">
+              <mat-option *ngFor="let c of categories" [value]="c">{{ c | titlecase }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Type *</mat-label>
+            <mat-select formControlName="type">
+              <mat-option *ngFor="let t of types" [value]="t">{{ t | titlecase }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Expiry Date *</mat-label>
+            <input matInput [matDatepicker]="expPicker" formControlName="expiryDate">
+            <mat-datepicker-toggle matSuffix [for]="expPicker"></mat-datepicker-toggle>
+            <mat-datepicker #expPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline"><mat-label>Quantity *</mat-label><input matInput type="number" formControlName="quantity"></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Min Stock Level</mat-label><input matInput type="number" formControlName="minStockLevel"></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Purchase Price (₹)</mat-label><input matInput type="number" formControlName="purchasePrice"></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Selling Price (₹)</mat-label><input matInput type="number" formControlName="sellingPrice"></mat-form-field>
+        </div>
+        <mat-form-field appearance="outline" style="width:100%"><mat-label>Active Ingredients (comma-separated)</mat-label><input matInput formControlName="activeIngredients"></mat-form-field>
+        <mat-form-field appearance="outline" style="width:100%"><mat-label>Side Effects (comma-separated)</mat-label><input matInput formControlName="sideEffects"></mat-form-field>
+        <mat-form-field appearance="outline" style="width:100%"><mat-label>Storage Instructions</mat-label><input matInput formControlName="storageInstructions" placeholder="e.g. Store below 25°C, away from light"></mat-form-field>
+        <mat-form-field appearance="outline" style="width:100%"><mat-label>Dosage Instructions</mat-label><input matInput formControlName="dosageInstructions"></mat-form-field>
+        <mat-slide-toggle formControlName="requiresPrescription" color="primary" style="margin-top:8px">Requires Prescription</mat-slide-toggle>
+      </mat-card-content>
+    </mat-card>
+    <div style="display:flex;gap:12px;max-width:860px">
+      <button mat-stroked-button type="button" routerLink="/pharmacy">Cancel</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="saving">
+        <mat-spinner diameter="18" *ngIf="saving"></mat-spinner>
+        <span *ngIf="!saving">{{ isEdit ? 'Update Medicine' : 'Add Medicine' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

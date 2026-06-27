@@ -1,0 +1,80 @@
+<div class="search-page fade-in">
+
+  <!-- Back button + header -->
+  <div class="search-header">
+    <button mat-icon-button (click)="router.navigate(['/pharmacy'])" matTooltip="Back to Pharmacy" class="back-btn">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div>
+      <h1>Medicine Search Engine</h1>
+      <p>
+        Search across <strong>{{ totalMedicines }}</strong> hospital medicines · cross-reference RxNorm national drug database
+      </p>
+    </div>
+  </div>
+
+  <!-- Search field -->
+  <div class="hero-search">
+    <mat-form-field appearance="outline" class="big-search">
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput [value]="query" (keyup)="onSearch($any($event.target).value)"
+             placeholder="e.g. Amoxicillin, Metformin, Ibuprofen, Ondansetron...">
+      <button *ngIf="query" matSuffix mat-icon-button (click)="onSearch('')"><mat-icon>close</mat-icon></button>
+    </mat-form-field>
+
+    <!-- RxNorm hint -->
+    <div class="rxnorm-hint" *ngIf="!searched">
+      <div class="hint-label"><mat-icon>tips_and_updates</mat-icon> Try these medicines — they're in RxNorm:</div>
+      <div class="hint-chips">
+        <span class="hint-chip" *ngFor="let ex of rxNormExamples" (click)="onSearch(ex); query = ex">{{ ex }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-grid" *ngIf="searched">
+    <mat-card class="glass-card">
+      <h3><mat-icon>inventory_2</mat-icon> In Your Pharmacy ({{ localResults.length }})</h3>
+      <div class="empty-row" *ngIf="!localResults.length">
+        <mat-icon>search_off</mat-icon>
+        <p>No matches in inventory</p>
+        <small>Try adding this medicine via <a routerLink="/pharmacy/new">Add Medicine</a></small>
+      </div>
+      <div class="local-item" *ngFor="let m of localResults" (click)="viewMedicine(m._id)">
+        <div>
+          <strong>{{ m.name }}</strong>
+          <span>{{ m.genericName }}</span>
+        </div>
+        <span class="price">₹{{ m.sellingPrice }}</span>
+        <span class="stock-chip" [class.low]="m.isLowStock">{{ m.isLowStock ? 'Low Stock' : 'In Stock' }}</span>
+      </div>
+    </mat-card>
+
+    <mat-card class="glass-card">
+      <h3>
+        <mat-icon>public</mat-icon> RxNorm National Drug Database
+        <span class="rxnorm-badge">US FDA</span>
+      </h3>
+      <p class="rxnorm-note">International generic names work best — e.g. "Acetaminophen" not "Paracetamol"</p>
+      <div class="loading-row" *ngIf="loading"><mat-spinner diameter="24"></mat-spinner> Querying RxNorm...</div>
+      <div class="empty-row" *ngIf="!loading && !externalResults.length">
+        <mat-icon>search_off</mat-icon>
+        <p>No RxNorm matches — try the generic/INN name</p>
+      </div>
+      <div class="external-item" *ngFor="let r of externalResults">
+        <div class="ext-info">
+          <strong>{{ r.name }}</strong>
+          <small *ngIf="r.synonym && r.synonym !== r.name">{{ r.synonym }}</small>
+        </div>
+        <span class="tty-badge">{{ r.ttyLabel || r.tty }}</span>
+      </div>
+    </mat-card>
+  </div>
+
+  <!-- Empty placeholder -->
+  <div class="placeholder" *ngIf="!searched">
+    <mat-icon>medication</mat-icon>
+    <p>{{ totalMedicines }} medicines in your hospital · Start typing to search</p>
+  </div>
+
+</div>

@@ -1,0 +1,38 @@
+---
+- name: Install Terraform
+  hosts: jenkins_server
+  become: true
+
+  vars:
+    terraform_version: "1.6.6"
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: [gnupg, software-properties-common, curl]
+        state: present
+
+    - name: Add HashiCorp GPG key
+      apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+        state: present
+
+    - name: Add HashiCorp repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install Terraform
+      apt:
+        name: terraform
+        state: present
+        update_cache: true
+
+    - name: Verify Terraform installation
+      command: terraform version
+      register: tf_out
+      changed_when: false
+
+    - name: Print Terraform version
+      debug:
+        msg: "{{ tf_out.stdout_lines[0] }}"

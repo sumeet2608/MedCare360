@@ -1,0 +1,57 @@
+<div class="app-container" role="application" aria-label="MedCare 360 Hospital Management">
+  <app-sidebar [isOpen]="sidebarOpen" (toggleSidebar)="toggleSidebar()" role="navigation" aria-label="Main navigation"></app-sidebar>
+  <div class="main-content" role="main">
+    <app-navbar (menuToggle)="toggleSidebar()" role="banner"></app-navbar>
+    <div class="page-content" id="main-content" tabindex="-1">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>
+
+<!-- Floating AI Chat Widget -->
+<div class="ai-float-container" [class.open]="aiChatOpen">
+  <!-- Chat Panel -->
+  <div class="ai-chat-panel" *ngIf="aiChatOpen">
+    <div class="ai-chat-header">
+      <div class="ai-header-info">
+        <div class="ai-avatar-sm"><mat-icon>smart_toy</mat-icon></div>
+        <div>
+          <div class="ai-name">MedCare AI</div>
+          <div class="ai-status"><span class="dot"></span> Online</div>
+        </div>
+      </div>
+      <button mat-icon-button (click)="aiChatOpen = false"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <div class="ai-messages" #floatMessages>
+      <div *ngIf="aiMessages.length === 0" class="ai-welcome">
+        <mat-icon style="font-size:36px;color:#0891b2">health_and_safety</mat-icon>
+        <p>Hi! I'm your MedCare AI Assistant. Ask me anything about health, medicines, or hospital services.</p>
+        <div class="ai-chips">
+          <button class="ai-chip" *ngFor="let q of aiSuggestions" (click)="sendAiMessage(q)">{{ q }}</button>
+        </div>
+      </div>
+      <div *ngFor="let msg of aiMessages" class="ai-msg" [class.user]="msg.role === 'user'" [class.bot]="msg.role === 'assistant'">
+        <div class="ai-bubble">{{ msg.content }}</div>
+        <div class="ai-time">{{ msg.time | date:'shortTime' }}</div>
+      </div>
+      <div *ngIf="aiLoading" class="ai-msg bot">
+        <div class="ai-bubble typing"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <div class="ai-input-row">
+      <input class="ai-input" [(ngModel)]="aiInput" (keydown.enter)="sendAiMessage()" placeholder="Ask a health question…" [disabled]="aiLoading">
+      <button class="ai-send" (click)="sendAiMessage()" [disabled]="!aiInput.trim() || aiLoading">
+        <mat-icon>send</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- FAB Button -->
+  <button class="ai-fab" (click)="toggleAiChat()" [matTooltip]="aiChatOpen ? 'Close AI' : 'AI Health Assistant'" matTooltipPosition="left">
+    <mat-icon *ngIf="!aiChatOpen">smart_toy</mat-icon>
+    <mat-icon *ngIf="aiChatOpen">close</mat-icon>
+    <span class="ai-fab-badge" *ngIf="aiUnread > 0">{{ aiUnread }}</span>
+  </button>
+</div>

@@ -1,0 +1,195 @@
+<div class="fade-in rx-page">
+  <div class="page-header">
+    <div>
+      <h1><mat-icon>local_pharmacy</mat-icon> {{ rxId && rxId !== 'new' ? 'View Prescription' : 'New Prescription' }}</h1>
+      <p>Generate a structured digital prescription with medication details</p>
+    </div>
+    <div class="header-actions">
+      <button mat-button (click)="cancel()">Cancel</button>
+      <button mat-stroked-button (click)="printRx()"><mat-icon>print</mat-icon> Print</button>
+      <button mat-raised-button color="primary" (click)="save()" [disabled]="saving">
+        <mat-spinner *ngIf="saving" diameter="16" style="display:inline-block;margin-right:6px"></mat-spinner>
+        <mat-icon *ngIf="!saving">save</mat-icon> Save Prescription
+      </button>
+    </div>
+  </div>
+
+  <div class="rx-layout" *ngIf="!loading">
+    <!-- Left: form -->
+    <div class="rx-form">
+      <!-- Patient & Doctor -->
+      <mat-card class="rx-card">
+        <div class="card-title"><mat-icon>person</mat-icon> Patient & Provider</div>
+        <div class="form-2col">
+          <mat-form-field appearance="outline">
+            <mat-label>Patient *</mat-label>
+            <mat-select [(ngModel)]="rx.patient">
+              <mat-option *ngFor="let p of patients" [value]="p._id">{{ p.fullName }} — {{ p.patientId }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Prescribing Doctor</mat-label>
+            <mat-select [(ngModel)]="rx.doctor">
+              <mat-option *ngFor="let d of doctors" [value]="d._id">{{ d.fullName }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="icd-row">
+          <div class="icd-search-row">
+            <input class="icd-input" [(ngModel)]="icd10Query" placeholder="Search ICD-10 diagnosis code..."
+              (keydown.enter)="searchICD10()">
+            <button mat-stroked-button (click)="searchICD10()" [disabled]="icd10Loading">
+              <mat-spinner *ngIf="icd10Loading" diameter="14" style="display:inline-block"></mat-spinner>
+              <mat-icon *ngIf="!icd10Loading">search</mat-icon>
+            </button>
+          </div>
+          <div class="icd-results" *ngIf="icd10Results.length > 0">
+            <div class="icd-result" *ngFor="let r of icd10Results" (click)="selectICD10(r)">
+              <strong class="icd-code">{{ r.code }}</strong><span>{{ r.description }}</span>
+              <span class="icd-cat">{{ r.category }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-2col" style="margin-top:8px">
+          <mat-form-field appearance="outline">
+            <mat-label>Diagnosis / Clinical Notes *</mat-label>
+            <input matInput [(ngModel)]="rx.diagnosis" placeholder="e.g. Acute pharyngitis">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Valid Until</mat-label>
+            <input matInput type="date" [(ngModel)]="rx.validUntil">
+          </mat-form-field>
+        </div>
+      </mat-card>
+
+      <!-- Add Medication -->
+      <mat-card class="rx-card">
+        <div class="card-title"><mat-icon>medication</mat-icon> Add Medication</div>
+        <div class="med-form">
+          <div class="form-2col">
+            <mat-form-field appearance="outline">
+              <mat-label>Medicine Name *</mat-label>
+              <input matInput [(ngModel)]="newMed.medicineName" placeholder="e.g. Amoxicillin">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Generic Name</mat-label>
+              <input matInput [(ngModel)]="newMed.genericName" placeholder="e.g. Amoxicillin trihydrate">
+            </mat-form-field>
+          </div>
+          <div class="form-3col">
+            <mat-form-field appearance="outline">
+              <mat-label>Strength</mat-label>
+              <input matInput [(ngModel)]="newMed.strength" placeholder="e.g. 500mg">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Dosage Form</mat-label>
+              <mat-select [(ngModel)]="newMed.dosageForm">
+                <mat-option *ngFor="let f of dosageForms" [value]="f">{{ f | titlecase }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Route</mat-label>
+              <mat-select [(ngModel)]="newMed.route">
+                <mat-option *ngFor="let r of routes" [value]="r">{{ r.toUpperCase() }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="form-3col">
+            <mat-form-field appearance="outline">
+              <mat-label>Dose</mat-label>
+              <input matInput [(ngModel)]="newMed.dose" placeholder="e.g. 1 tablet">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Frequency *</mat-label>
+              <mat-select [(ngModel)]="newMed.frequency">
+                <mat-option *ngFor="let f of frequencies" [value]="f">{{ f }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Duration</mat-label>
+              <input matInput [(ngModel)]="newMed.duration" placeholder="e.g. 7 days">
+            </mat-form-field>
+          </div>
+          <div class="form-2col">
+            <mat-form-field appearance="outline">
+              <mat-label>Quantity</mat-label>
+              <input matInput type="number" [(ngModel)]="newMed.quantity" min="0">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Special Instructions</mat-label>
+              <input matInput [(ngModel)]="newMed.instructions" placeholder="e.g. Take after food, avoid sunlight">
+            </mat-form-field>
+          </div>
+          <button mat-raised-button color="accent" (click)="addMedication()" style="align-self:flex-start">
+            <mat-icon>add</mat-icon> Add to Prescription
+          </button>
+        </div>
+      </mat-card>
+
+      <!-- Medication List -->
+      <mat-card class="rx-card" *ngIf="rx.medications.length > 0">
+        <div class="card-title"><mat-icon>list</mat-icon> Medications ({{ rx.medications.length }})</div>
+        <div class="med-list">
+          <div class="med-item" *ngFor="let m of rx.medications; let i = index">
+            <div class="med-num">{{ i + 1 }}</div>
+            <div class="med-details">
+              <div class="med-name">{{ m.medicineName }} <span class="med-strength">{{ m.strength }}</span></div>
+              <div class="med-meta">{{ m.dose }} · {{ m.frequency }} · {{ m.duration }}</div>
+              <div class="med-route">{{ m.dosageForm | titlecase }} · {{ m.route.toUpperCase() }}</div>
+              <div class="med-instr" *ngIf="m.instructions">{{ m.instructions }}</div>
+            </div>
+            <button mat-icon-button color="warn" (click)="removeMed(i)" matTooltip="Remove"><mat-icon>delete_outline</mat-icon></button>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Right: Printable Preview -->
+    <div class="rx-preview-panel">
+      <mat-card class="rx-preview-card" id="printable-rx">
+        <div class="rx-letterhead">
+          <div class="rx-hospital">MedCare 360 Hospital</div>
+          <div class="rx-doctor-info" *ngIf="selectedDoctor">
+            <strong>{{ selectedDoctor.fullName }}</strong><br>
+            {{ selectedDoctor.specialization }} · Lic# {{ selectedDoctor.licenseNumber }}
+          </div>
+        </div>
+        <mat-divider></mat-divider>
+        <div class="rx-patient-info" *ngIf="selectedPatient">
+          <div><strong>Patient:</strong> {{ selectedPatient.fullName }}</div>
+          <div><strong>ID:</strong> {{ selectedPatient.patientId }}</div>
+          <div><strong>Date:</strong> {{ rx.validUntil | date:'dd MMM yyyy' }}</div>
+        </div>
+        <div class="rx-diagnosis" *ngIf="rx.diagnosis">
+          <strong>Diagnosis:</strong> {{ rx.diagnosis }}
+          <span *ngIf="rx.icd10Code" class="icd-badge">{{ rx.icd10Code }}</span>
+        </div>
+        <div class="rx-symbol">℞</div>
+        <div class="rx-med-preview" *ngFor="let m of rx.medications; let i = index">
+          <div class="rx-med-line">
+            <strong>{{ i+1 }}. {{ m.medicineName }}</strong> {{ m.strength }}
+            — {{ m.dosageForm | titlecase }}
+          </div>
+          <div class="rx-med-sig">
+            Sig: {{ m.dose }} {{ m.frequency }}{{ m.duration ? ' × ' + m.duration : '' }}
+          </div>
+          <div class="rx-med-qty" *ngIf="m.quantity">Qty: {{ m.quantity }}</div>
+          <div class="rx-med-instr" *ngIf="m.instructions">{{ m.instructions }}</div>
+        </div>
+        <div class="rx-empty" *ngIf="!rx.medications.length">
+          <mat-icon>medication</mat-icon>
+          <p>Add medications to see preview</p>
+        </div>
+        <mat-divider style="margin-top:16px"></mat-divider>
+        <div class="rx-footer">
+          <div class="rx-sig-line">Physician Signature: _______________</div>
+          <div class="rx-valid" *ngIf="rx.validUntil">Valid until: {{ rx.validUntil | date:'dd MMM yyyy' }}</div>
+        </div>
+      </mat-card>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <mat-spinner diameter="48"></mat-spinner><p>Loading prescription...</p>
+  </div>
+</div>

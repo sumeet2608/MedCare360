@@ -1,0 +1,84 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>{{ isView ? 'Invoice Details' : 'Create Invoice' }}</h1></div>
+    <button mat-stroked-button routerLink="/billing"><mat-icon>arrow_back</mat-icon> Back</button>
+  </div>
+
+  <!-- View Mode -->
+  <mat-card *ngIf="isView && invoiceData" style="max-width:860px;padding:32px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:24px">
+      <div><h2 style="color:var(--primary);margin:0">INVOICE</h2><div style="color:#666;font-size:0.875rem">{{ invoiceData.invoiceNumber }}</div></div>
+      <div style="text-align:right"><div style="font-size:0.875rem">Date: {{ invoiceData.createdAt | date:'mediumDate' }}</div>
+        <span class="status-chip" [ngClass]="invoiceData.status">{{ invoiceData.status | titlecase }}</span>
+      </div>
+    </div>
+    <mat-divider style="margin-bottom:20px"></mat-divider>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+      <div><h4>Patient</h4><p>{{ invoiceData.patient?.user?.firstName }} {{ invoiceData.patient?.user?.lastName }}<br><small>{{ invoiceData.patient?.user?.email }}</small></p></div>
+    </div>
+    <mat-table [dataSource]="invoiceData.items" style="margin-bottom:16px">
+      <ng-container matColumnDef="description"><mat-header-cell *matHeaderCellDef>Description</mat-header-cell><mat-cell *matCellDef="let i">{{ i.description }}</mat-cell></ng-container>
+      <ng-container matColumnDef="qty"><mat-header-cell *matHeaderCellDef>Qty</mat-header-cell><mat-cell *matCellDef="let i">{{ i.quantity }}</mat-cell></ng-container>
+      <ng-container matColumnDef="price"><mat-header-cell *matHeaderCellDef>Unit Price</mat-header-cell><mat-cell *matCellDef="let i">₹{{ i.unitPrice }}</mat-cell></ng-container>
+      <ng-container matColumnDef="total"><mat-header-cell *matHeaderCellDef>Total</mat-header-cell><mat-cell *matCellDef="let i"><strong>₹{{ i.total }}</strong></mat-cell></ng-container>
+      <mat-header-row *matHeaderRowDef="['description','qty','price','total']"></mat-header-row>
+      <mat-row *matRowDef="let r; columns:['description','qty','price','total']"></mat-row>
+    </mat-table>
+    <div style="text-align:right;padding:16px;background:#f5f5f5;border-radius:8px">
+      <div>Subtotal: ₹{{ invoiceData.subtotal | number }}</div>
+      <div style="color:#f44336" *ngIf="invoiceData.totalDiscount">Discount: -₹{{ invoiceData.totalDiscount | number }}</div>
+      <div style="color:#ff9800" *ngIf="invoiceData.totalTax">Tax: +₹{{ invoiceData.totalTax | number }}</div>
+      <div style="font-size:1.3rem;font-weight:700;color:var(--primary);margin-top:8px">Total: ₹{{ invoiceData.totalAmount | number }}</div>
+      <div style="color:#4caf50">Paid: ₹{{ invoiceData.paidAmount | number }}</div>
+      <div style="color:#f44336" *ngIf="invoiceData.dueAmount > 0">Due: ₹{{ invoiceData.dueAmount | number }}</div>
+    </div>
+  </mat-card>
+
+  <!-- Create Mode -->
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!isView">
+    <mat-card style="max-width:900px;padding:24px;margin-bottom:16px">
+      <mat-form-field appearance="outline" style="width:320px">
+        <mat-label>Patient *</mat-label>
+        <mat-select formControlName="patient">
+          <mat-option *ngFor="let p of patients" [value]="p._id">{{ p.user?.firstName }} {{ p.user?.lastName }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div formArrayName="items">
+        <div *ngFor="let item of items.controls; let i=index" [formGroupName]="i" class="item-row">
+          <mat-form-field appearance="outline" style="flex:2"><mat-label>Description</mat-label><input matInput formControlName="description"></mat-form-field>
+          <mat-form-field appearance="outline" style="flex:1.2">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category">
+              <mat-option *ngFor="let c of categories" [value]="c">{{ c | titlecase }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" style="width:80px"><mat-label>Qty</mat-label><input matInput type="number" formControlName="quantity" (change)="calcTotal(i)"></mat-form-field>
+          <mat-form-field appearance="outline" style="width:110px"><mat-label>Price (₹)</mat-label><input matInput type="number" formControlName="unitPrice" (change)="calcTotal(i)"></mat-form-field>
+          <mat-form-field appearance="outline" style="width:90px"><mat-label>Discount</mat-label><input matInput type="number" formControlName="discount" (change)="calcTotal(i)"></mat-form-field>
+          <button mat-icon-button color="warn" type="button" (click)="removeItem(i)" [disabled]="items.length === 1"><mat-icon>delete</mat-icon></button>
+        </div>
+      </div>
+
+      <button mat-stroked-button type="button" (click)="addItem()" style="margin-bottom:16px"><mat-icon>add</mat-icon> Add Item</button>
+
+      <div style="text-align:right;padding:16px;background:#f5f5f5;border-radius:8px;margin-bottom:16px">
+        <div style="font-size:1.4rem;font-weight:700;color:var(--primary)">Grand Total: ₹{{ grandTotal | number }}</div>
+      </div>
+
+      <mat-form-field appearance="outline" style="width:100%"><mat-label>Notes</mat-label><textarea matInput formControlName="notes" rows="2"></textarea></mat-form-field>
+      <mat-form-field appearance="outline" style="width:200px"><mat-label>Due Date</mat-label><input matInput [matDatepicker]="dp" formControlName="dueDate"><mat-datepicker-toggle matSuffix [for]="dp"></mat-datepicker-toggle><mat-datepicker #dp></mat-datepicker></mat-form-field>
+    </mat-card>
+    <div style="display:flex;gap:12px;max-width:900px">
+      <button mat-stroked-button type="button" routerLink="/billing">Cancel</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="saving">
+        <mat-spinner diameter="18" *ngIf="saving"></mat-spinner>
+        <span *ngIf="!saving"><mat-icon>receipt</mat-icon> Generate Invoice</span>
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+.item-row { display:flex; gap:8px; align-items:center; margin-bottom:4px; flex-wrap:wrap; }
+</style>

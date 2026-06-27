@@ -1,0 +1,89 @@
+<div class="detail-page fade-in" *ngIf="!loading && medicine">
+  <button mat-button class="back-btn" (click)="goBack()"><mat-icon>arrow_back</mat-icon> Back to Pharmacy</button>
+
+  <div class="med-hero glass-card">
+    <div class="hero-main">
+      <span class="med-id">{{ medicine.medicineId }}</span>
+      <h1>{{ medicine.name }}</h1>
+      <p class="generic">{{ medicine.genericName }} <span *ngIf="medicine.brand">· {{ medicine.brand }}</span></p>
+
+      <div class="tag-row">
+        <span class="tag">{{ medicine.category | titlecase }}</span>
+        <span class="tag">{{ medicine.type | titlecase }}</span>
+        <span class="tag" *ngIf="medicine.requiresPrescription"><mat-icon>medical_information</mat-icon> Rx Required</span>
+        <span class="tag status" [class]="stockStatus().cls">{{ stockStatus().label }}</span>
+      </div>
+    </div>
+
+    <div class="hero-side">
+      <div class="price-box">
+        <span class="price">₹{{ medicine.sellingPrice }}</span>
+        <span class="price-label">selling price</span>
+      </div>
+      <div class="qty-box">
+        <span class="qty">{{ medicine.quantity }}</span>
+        <span class="qty-label">in stock</span>
+      </div>
+      <div class="hero-actions">
+        <button mat-stroked-button (click)="compareWith()"><mat-icon>compare_arrows</mat-icon> Compare</button>
+        <button mat-raised-button color="primary" (click)="editMedicine()"><mat-icon>edit</mat-icon> Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <mat-card class="glass-card">
+      <h3><mat-icon>science</mat-icon> Composition & Manufacturer</h3>
+      <dl>
+        <dt>Active Ingredients</dt><dd>{{ (medicine.activeIngredients || []).join(', ') || '—' }}</dd>
+        <dt>Manufacturer</dt><dd>{{ medicine.manufacturer || '—' }}</dd>
+        <dt>Batch Number</dt><dd>{{ medicine.batchNumber || '—' }}</dd>
+        <dt>Expiry Date</dt><dd>{{ medicine.expiryDate | date:'mediumDate' }}</dd>
+        <dt>Storage</dt><dd>{{ medicine.storageInstructions || '—' }}</dd>
+      </dl>
+    </mat-card>
+
+    <mat-card class="glass-card">
+      <h3><mat-icon>warning_amber</mat-icon> Safety Information</h3>
+      <dl>
+        <dt>Side Effects</dt><dd>{{ (medicine.sideEffects || []).join(', ') || '—' }}</dd>
+        <dt>Contraindications</dt><dd>{{ (medicine.contraindications || []).join(', ') || '—' }}</dd>
+        <dt>Dosage Instructions</dt><dd>{{ medicine.dosageInstructions || '—' }}</dd>
+      </dl>
+    </mat-card>
+
+    <mat-card class="glass-card openfda-card">
+      <h3><mat-icon>verified</mat-icon> OpenFDA Verified Label Data</h3>
+
+      <div class="enrich-loading" *ngIf="enrichLoading">
+        <mat-spinner diameter="28"></mat-spinner>
+        <span>Cross-checking against the FDA drug label database...</span>
+      </div>
+
+      <div class="enrich-unavailable" *ngIf="!enrichLoading && !enrichment">
+        <mat-icon>cloud_off</mat-icon>
+        <p>No matching FDA label found for "{{ medicine.genericName }}" — this may be a regional/generic formulation not in the US label database.</p>
+      </div>
+
+      <div class="enrich-data" *ngIf="!enrichLoading && enrichment">
+        <span class="source-badge">{{ enrichSource === 'cache' ? 'Cached result' : 'Live from OpenFDA' }}</span>
+        <dl>
+          <dt *ngIf="enrichment.purpose">Purpose</dt><dd *ngIf="enrichment.purpose">{{ enrichment.purpose }}</dd>
+          <dt *ngIf="enrichment.indicationsAndUsage">Indications & Usage</dt><dd *ngIf="enrichment.indicationsAndUsage">{{ enrichment.indicationsAndUsage }}</dd>
+          <dt *ngIf="enrichment.warnings">Warnings</dt><dd *ngIf="enrichment.warnings">{{ enrichment.warnings }}</dd>
+          <dt *ngIf="enrichment.contraindications">FDA Contraindications</dt><dd *ngIf="enrichment.contraindications">{{ enrichment.contraindications }}</dd>
+          <dt *ngIf="enrichment.pregnancy">Pregnancy Risk</dt><dd *ngIf="enrichment.pregnancy">{{ enrichment.pregnancy }}</dd>
+          <dt *ngIf="enrichment.drugInteractions">Drug Interactions</dt><dd *ngIf="enrichment.drugInteractions">{{ enrichment.drugInteractions }}</dd>
+          <dt *ngIf="enrichment.storageAndHandling">Storage & Handling</dt><dd *ngIf="enrichment.storageAndHandling">{{ enrichment.storageAndHandling }}</dd>
+        </dl>
+      </div>
+    </mat-card>
+  </div>
+</div>
+
+<div class="loading-state" *ngIf="loading"><mat-spinner diameter="48"></mat-spinner></div>
+<div class="not-found" *ngIf="!loading && notFound">
+  <mat-icon>medication</mat-icon>
+  <h3>Medicine not found</h3>
+  <button mat-raised-button color="primary" (click)="goBack()">Back to Pharmacy</button>
+</div>

@@ -1,0 +1,170 @@
+// ── Upgrade 3: Data Grid — Magic Premium Table ────────────────────────────────
+.grid-wrap {
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(8,145,178,0.10);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(8,145,178,0.07), 0 1px 3px rgba(0,0,0,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  width: 100%; max-width: 100%;
+  contain: layout style;
+}
+
+// Toolbar — clean minimal
+.grid-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid rgba(8,145,178,0.07);
+  background: linear-gradient(90deg, rgba(8,145,178,0.03), transparent);
+  flex-wrap: wrap;
+}
+
+// Premium search box
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 14px;
+  flex: 1; max-width: 340px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(8,145,178,0.08);
+  }
+  mat-icon { font-size: 18px; width: 18px; height: 18px; color: #94a3b8; flex-shrink: 0; }
+  input {
+    border: none; outline: none; flex: 1;
+    font-size: 0.86rem; font-family: 'Noto Sans', sans-serif;
+    color: var(--text-primary);
+    &::placeholder { color: #94a3b8; }
+  }
+}
+
+.toolbar-actions { display: flex; align-items: center; gap: 8px; }
+.result-count {
+  font-size: 0.76rem; color: var(--text-muted); font-weight: 600;
+  white-space: nowrap;
+  background: rgba(8,145,178,0.06); border-radius: 8px; padding: 3px 10px;
+}
+
+.col-menu-wrap { position: relative; }
+.col-menu {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  background: white; border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+  border: 1px solid var(--border-light);
+  padding: 10px 14px; z-index: 200; min-width: 190px;
+  max-height: 280px; overflow-y: auto;
+
+  label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.82rem; padding: 6px 0; cursor: pointer;
+    color: var(--text-secondary); transition: color 0.15s;
+    &:hover { color: var(--primary); }
+  }
+}
+
+// Table
+.grid-scroll-area { overflow-x: auto; }
+.data-grid-table {
+  width: 100%; border-collapse: collapse; font-size: 0.85rem;
+
+  thead th {
+    position: sticky; top: 0; z-index: 5;
+    background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+    text-align: left;
+    padding: 11px 16px;
+    font-weight: 700; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    white-space: nowrap; user-select: none;
+    border-bottom: 2px solid rgba(8,145,178,0.10);
+
+    &.sortable {
+      cursor: pointer;
+      &:hover { background: rgba(8,145,178,0.06); color: var(--primary); }
+    }
+    .sort-icon {
+      font-size: 14px; width: 14px; height: 14px;
+      vertical-align: middle; margin-left: 3px; color: var(--primary);
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.15s ease-out;
+
+    &:hover {
+      background: linear-gradient(90deg, rgba(8,145,178,0.04), rgba(8,145,178,0.02));
+    }
+    &:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: -2px;
+    }
+    // Alternating row subtle tint
+    &:nth-child(even) { background: rgba(248,250,252,0.6); }
+    &:nth-child(even):hover { background: rgba(8,145,178,0.04); }
+  }
+
+  td {
+    padding: 11px 16px;
+    color: var(--text-secondary);
+    font-family: 'Noto Sans', sans-serif;
+    vertical-align: middle;
+  }
+  .select-col { width: 36px; }
+}
+
+// Virtual scroll
+.virtual-viewport { height: 480px; }
+
+// Loading — matches global skeleton
+.grid-loading {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 48px 20px;
+  color: var(--text-muted); font-size: 0.85rem;
+}
+
+// Empty state — Magic Pro Max empty state
+.grid-empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 64px 20px; gap: 12px; text-align: center;
+
+  mat-icon {
+    font-size: 52px; width: 52px; height: 52px;
+    color: var(--primary-mid); opacity: 0.5; margin-bottom: 4px;
+  }
+  p {
+    font-size: 0.9rem; color: var(--text-muted);
+    font-family: 'Noto Sans', sans-serif; margin: 0;
+  }
+}
+
+// Pagination — premium design
+.grid-pager {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px;
+  border-top: 1px solid rgba(8,145,178,0.07);
+  background: rgba(248,250,252,0.6);
+  font-size: 0.78rem; color: var(--text-muted);
+
+  .pager-btns { display: flex; gap: 4px; }
+
+  button[mat-icon-button] {
+    width: 32px !important; height: 32px !important;
+    border-radius: 8px !important;
+    color: var(--text-secondary) !important;
+    &:hover:not([disabled]) { background: rgba(8,145,178,0.08) !important; color: var(--primary) !important; }
+    &[disabled] { opacity: 0.35; }
+  }
+}
+
+// Export button styling
+button[mat-icon-button] {
+  border-radius: 10px !important;
+}

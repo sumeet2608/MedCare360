@@ -1,0 +1,1463 @@
+@use '@angular/material' as mat;
+@include mat.core();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  MAGIC MCP GLOBAL — Patterns from 21st.dev component library
+//  Sources: Statistics Card 2, Health Stat Card, Stats Card
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Magic MCP: Health Stat Card (animated bar chart pattern) ──────────────────
+// Applied to: Lab analyzer, Analytics charts, Blood bank stats
+.magic-health-bar-chart {
+  display: flex; align-items: flex-end; gap: 6px;
+  padding: 16px; background: rgba(248,250,252,0.8);
+  border-radius: 12px; height: 120px;
+
+  .magic-bar {
+    flex: 1; border-radius: 6px 6px 0 0; min-width: 14px;
+    transform-origin: bottom;
+    animation: magic-bar-grow 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+    cursor: pointer;
+    position: relative;
+
+    &:hover {
+      transform: scaleY(1.06) translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      z-index: 2;
+    }
+  }
+  @for $i from 1 through 12 {
+    .magic-bar:nth-child(#{$i}) { animation-delay: #{($i - 1) * 50}ms; }
+  }
+}
+@keyframes magic-bar-grow {
+  from { transform: scaleY(0); opacity: 0; }
+  to   { transform: scaleY(1); opacity: 1; }
+}
+
+// ── Magic MCP: Stats Card (shadcn pattern) — clean minimal ────────────────────
+// Applied to: Billing, Patients, Pharmacy stat rows
+.magic-stats-row {
+  display: grid; gap: 16px; margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.magic-stats-card {
+  background: white; border: 1px solid var(--border-light);
+  border-radius: 14px; padding: 20px 20px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: box-shadow 200ms ease-out, transform 200ms ease-out;
+
+  &:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+
+  .msc2-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .msc2-title  { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; font-family: 'Noto Sans', sans-serif; }
+  .msc2-icon   { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; mat-icon { font-size: 18px; width: 18px; height: 18px; } }
+  .msc2-value  { font-family: 'Figtree', sans-serif; font-size: 1.75rem; font-weight: 900; color: var(--text-primary); letter-spacing: -0.8px; line-height: 1; }
+  .msc2-change { margin-top: 6px; font-size: 0.75rem; font-family: 'Noto Sans', sans-serif; display: flex; align-items: center; gap: 3px; mat-icon { font-size: 13px; width: 13px; height: 13px; } }
+  .msc2-change.positive { color: #059669; }
+  .msc2-change.negative { color: #dc2626; }
+  .msc2-change.neutral  { color: var(--text-muted); }
+  .msc2-sub   { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; font-style: italic; }
+}
+
+// ── Site Stat Cards — white glassmorphism, matches MedCare360 design ─────────
+// Used on Appointments, Analytics, Billing, Patients pages
+.site-stats-row {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 20px;
+  // auto-fill so it wraps correctly whether sidebar is open or collapsed
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.site-stat-card {
+  display: flex; align-items: center; gap: 16px;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 16px rgba(8,145,178,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(8,145,178,0.12); }
+}
+.ssc-icon {
+  width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  mat-icon { font-size: 24px; width: 24px; height: 24px; }
+}
+.ssc-body { flex: 1; min-width: 0; }
+.ssc-value {
+  font-family: 'Figtree', sans-serif; font-size: 1.5rem; font-weight: 900;
+  color: var(--text-primary); letter-spacing: -0.5px; line-height: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.ssc-label {
+  font-family: 'Noto Sans', sans-serif; font-size: 0.68rem; font-weight: 600;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px;
+  margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.ssc-trend {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 9px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;
+  font-family: 'Figtree', sans-serif; align-self: flex-start;
+  mat-icon { font-size: 12px; width: 12px; height: 12px; }
+  &.up   { background: #d1fae5; color: #065f46; }
+  &.down { background: #fee2e2; color: #991b1b; }
+  &.flat { background: #f1f5f9; color: #64748b; }
+}
+
+// RxNorm search result item
+.ext-info { flex: 1; min-width: 0;
+  strong { display: block; font-size: 0.85rem; color: var(--text-primary); font-weight: 600; }
+  small  { display: block; font-size: 0.73rem; color: var(--text-muted); margin-top: 2px; font-style: italic; }
+}
+
+// ── Global stat card grids — no forced height, auto-fill rows ─────────────────
+.magic-stats-row,
+.kpi-grid,
+.site-stats-row {
+  grid-auto-rows: auto;   // never force a height — let content determine it
+}
+
+// ── Magic MCP: Dark card with SVG circles (reusable) ─────────────────────────
+// Can be applied to any section needing dark premium cards
+.magic-dark-card {
+  position: relative; overflow: hidden; border-radius: 18px;
+  padding: 20px 22px; color: white;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.10);
+
+  .magic-card-deco {
+    position: absolute; right: 0; top: 0; width: 55%; height: 100%;
+    pointer-events: none; z-index: 0;
+  }
+  .magic-card-body { position: relative; z-index: 1; }
+}
+
+// ── Magic MCP: Badge trend indicator ─────────────────────────────────────────
+.magic-trend-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 9px; border-radius: 20px;
+  font-family: 'Figtree', sans-serif; font-size: 0.7rem; font-weight: 700;
+  mat-icon { font-size: 12px; width: 12px; height: 12px; }
+
+  &.positive { background: rgba(16,185,129,0.15); color: #059669; border: 1px solid rgba(16,185,129,0.25); }
+  &.negative { background: rgba(239,68,68,0.12); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
+  &.neutral  { background: rgba(100,116,139,0.10); color: #64748b; border: 1px solid rgba(100,116,139,0.2); }
+}
+
+// ── Healthcare Design System — Custom Palettes ──────────────────────────────
+// Primary: Cyan 600 (#0891b2) — calm, trustworthy, medical
+$mc-primary-map: (
+  50:   #ecfeff,
+  100:  #cffafe,
+  200:  #a5f3fc,
+  300:  #67e8f9,
+  400:  #22d3ee,
+  500:  #06b6d4,
+  600:  #0891b2,
+  700:  #0e7490,
+  800:  #155e75,
+  900:  #164e63,
+  A100: #84ffff,
+  A200: #18ffff,
+  A400: #00e5ff,
+  A700: #00b8d4,
+  contrast: (
+    50:  rgba(black, 0.87),
+    100: rgba(black, 0.87),
+    200: rgba(black, 0.87),
+    300: rgba(black, 0.87),
+    400: rgba(black, 0.87),
+    500: rgba(black, 0.87),
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: rgba(black, 0.87),
+    A200: rgba(black, 0.87),
+    A400: rgba(black, 0.87),
+    A700: white,
+  )
+);
+
+// Accent: Emerald 600 (#059669) — health green
+$mc-accent-map: (
+  50:   #ecfdf5,
+  100:  #d1fae5,
+  200:  #a7f3d0,
+  300:  #6ee7b7,
+  400:  #34d399,
+  500:  #10b981,
+  600:  #059669,
+  700:  #047857,
+  800:  #065f46,
+  900:  #064e3b,
+  A100: #a7f3d0,
+  A200: #6ee7b7,
+  A400: #34d399,
+  A700: #10b981,
+  contrast: (
+    50:  rgba(black, 0.87),
+    100: rgba(black, 0.87),
+    200: rgba(black, 0.87),
+    300: rgba(black, 0.87),
+    400: rgba(black, 0.87),
+    500: rgba(black, 0.87),
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: rgba(black, 0.87),
+    A200: rgba(black, 0.87),
+    A400: rgba(black, 0.87),
+    A700: rgba(black, 0.87),
+  )
+);
+
+$primary-palette: mat.define-palette($mc-primary-map, 600, 400, 800);
+$accent-palette:  mat.define-palette($mc-accent-map,  600, 400, 800);
+$warn-palette:    mat.define-palette(mat.$red-palette);
+
+$medcare-theme: mat.define-light-theme((
+  color: (primary: $primary-palette, accent: $accent-palette, warn: $warn-palette),
+  typography: mat.define-typography-config($font-family: '"Figtree", "Noto Sans", sans-serif'),
+  density: 0
+));
+
+@include mat.all-component-themes($medcare-theme);
+
+// ── Global Reset ──────────────────────────────────────────────────────────────
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Noto Sans', 'Roboto', sans-serif;
+  background: var(--bg-page);
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ── Design Tokens ─────────────────────────────────────────────────────────────
+:root {
+  // Brand palette
+  --primary:          #0891b2;
+  --primary-dark:     #0e7490;
+  --primary-darker:   #155e75;
+  --primary-light:    #e0f7fa;
+  --primary-mid:      #b2ebf2;
+  --accent:           #059669;
+  --accent-light:     #d1fae5;
+  --warn:             #ef4444;
+  --success:          #059669;
+  --warning:          #d97706;
+  --danger:           #dc2626;
+  --danger-bg:        #fef2f2;
+
+  // Sidebar
+  --sidebar-bg-from:  #050e1f;
+  --sidebar-bg-to:    #0a1a3e;
+  --sidebar-width:    260px;
+  --header-height:    64px;
+
+  // Backgrounds — premium gradient mesh
+  --bg-page:          #eef6fb;
+  --bg-card:          #ffffff;
+  --bg-alt:           #f8fafc;
+  --bg-glass:         rgba(255,255,255,0.75);
+  --bg-glass-border:  rgba(255,255,255,0.4);
+
+  // Text
+  --text-primary:     #0f172a;
+  --text-secondary:   #334155;
+  --text-muted:       #64748b;
+
+  // Borders
+  --border:           #cbd5e1;
+  --border-light:     #e2e8f0;
+  --border-glow:      rgba(8,145,178,0.35);
+
+  // Radii
+  --radius-sm:        6px;
+  --radius-md:        12px;
+  --radius-lg:        18px;
+  --radius-xl:        24px;
+  --radius-2xl:       32px;
+
+  // Shadows — 3D layered depth
+  --shadow-xs:        0 1px 3px rgba(8,145,178,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:        0 4px 12px rgba(8,145,178,0.10), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow:           0 8px 24px rgba(8,145,178,0.12), 0 4px 8px rgba(0,0,0,0.06);
+  --shadow-md:        0 12px 32px rgba(8,145,178,0.15), 0 6px 12px rgba(0,0,0,0.08);
+  --shadow-hover:     0 20px 48px rgba(8,145,178,0.20), 0 8px 20px rgba(0,0,0,0.10);
+  --shadow-glow:      0 0 0 3px rgba(8,145,178,0.12), 0 16px 40px rgba(8,145,178,0.18);
+  --shadow-card-3d:   0 2px 0 rgba(255,255,255,0.8) inset, 0 -2px 0 rgba(8,145,178,0.08) inset,
+                      0 8px 24px rgba(8,145,178,0.12), 0 2px 4px rgba(0,0,0,0.06);
+
+  // Glow colors
+  --glow-primary:     rgba(8,145,178,0.3);
+  --glow-success:     rgba(5,150,105,0.3);
+  --glow-danger:      rgba(220,38,38,0.3);
+  --glow-warning:     rgba(217,119,6,0.3);
+  --glow-purple:      rgba(124,58,237,0.3);
+
+  // Transitions
+  --ease-fast:        0.15s cubic-bezier(0.4,0,0.2,1);
+  --ease-base:        0.25s cubic-bezier(0.4,0,0.2,1);
+  --ease-spring:      0.4s cubic-bezier(0.34,1.56,0.64,1);
+
+  // 3D Perspective
+  --perspective:      800px;
+
+  // Legacy aliases (keep existing code working)
+  --border-radius:    var(--radius-md);
+  --shadow-legacy:    var(--shadow-sm);
+  --shadow-hover-legacy: var(--shadow-hover);
+}
+
+// ── Upgrade 6: Angular Material — Premium Button System ──────────────────────
+// Raised / filled buttons
+.mat-mdc-raised-button.mat-primary,
+.mat-raised-button.mat-primary {
+  background: linear-gradient(135deg, #0891b2, #0e7490) !important;
+  color: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 14px rgba(8,145,178,0.35) !important;
+  font-family: 'Figtree', sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.2px !important;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out !important;
+
+  &:hover:not([disabled]) {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(8,145,178,0.45) !important;
+    background: linear-gradient(135deg, #0e7490, #155e75) !important;
+  }
+}
+.mat-mdc-raised-button.mat-accent { border-radius: 12px !important; font-family: 'Figtree', sans-serif !important; font-weight: 700 !important; }
+
+// Stroked / outline buttons
+.mat-mdc-stroked-button, .mat-stroked-button {
+  border-radius: 12px !important;
+  font-family: 'Figtree', sans-serif !important;
+  font-weight: 600 !important;
+  border-width: 1.5px !important;
+  transition: background 150ms ease-out !important;
+}
+
+// All mat-buttons uniform font
+.mat-mdc-button, .mat-mdc-flat-button, .mat-mdc-unelevated-button {
+  font-family: 'Figtree', sans-serif !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+}
+
+// Fab button
+.mat-mdc-fab, .mat-fab { box-shadow: 0 6px 24px rgba(8,145,178,0.4) !important; }
+
+.mat-mdc-progress-spinner circle,
+.mat-progress-spinner circle {
+  stroke: var(--primary);
+}
+
+.mat-mdc-checkbox.mat-primary .mdc-checkbox__background,
+.mat-checkbox-checked.mat-primary .mat-checkbox-background {
+  background-color: var(--primary) !important;
+}
+
+// mat-toolbar has width:100% by default — let left+right positioning control the width instead
+mat-toolbar.navbar,
+.mat-toolbar.navbar,
+.mat-mdc-toolbar.navbar {
+  width: auto !important;
+}
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+// Angular custom elements default to display:inline — force block so they
+// obey width/overflow constraints from their parent container.
+app-data-grid,
+app-ai-lab-analyzer {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+// Page-level routed components must be block with no extra width
+.page-content > * {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: margin-left 0.3s ease;
+}
+
+.page-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 80px 28px 28px;
+  background: var(--bg-page);
+}
+
+// ── Cards ─────────────────────────────────────────────────────────────────────
+.stat-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-card-3d);
+  border: 1px solid var(--bg-glass-border);
+  transition: all var(--ease-spring);
+  position: relative;
+  overflow: hidden;
+  perspective: var(--perspective);
+
+  // Subtle top highlight for 3D glass look
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+    pointer-events: none;
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-6px) rotateX(2deg);
+    border-color: var(--border-glow);
+  }
+}
+
+.stat-card .stat-value {
+  font-family: 'Figtree', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-card .stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  mat-icon { color: white; }
+}
+
+// ── Page Header ───────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+
+  h1 {
+    font-family: 'Figtree', sans-serif;
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.4px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-darker) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  p {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-top: 4px;
+    font-family: 'Noto Sans', sans-serif;
+  }
+}
+
+// ── Glassmorphism Utilities ────────────────────────────────────────────────────
+.glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--bg-glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-3d);
+}
+
+.glow-primary { box-shadow: 0 0 20px var(--glow-primary); }
+.glow-success { box-shadow: 0 0 20px var(--glow-success); }
+.glow-danger  { box-shadow: 0 0 20px var(--glow-danger); }
+
+// 3D floating badge
+.badge-3d {
+  box-shadow: 0 4px 12px currentColor, 0 1px 3px rgba(0,0,0,0.2);
+  transform: translateZ(4px);
+}
+
+// ── Tables ────────────────────────────────────────────────────────────────────
+.table-container {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-3d);
+  border: 1px solid var(--bg-glass-border);
+  overflow: hidden;
+
+  mat-table { width: 100%; }
+
+  .mat-header-row {
+    background: linear-gradient(90deg, rgba(8,145,178,0.04) 0%, rgba(8,145,178,0.02) 100%);
+    border-bottom: 2px solid var(--border-light);
+  }
+
+  .mat-header-cell {
+    font-family: 'Figtree', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--primary-darker);
+  }
+
+  .mat-row {
+    transition: all var(--ease-fast);
+    &:hover {
+      background: linear-gradient(90deg, var(--primary-light) 0%, rgba(224,247,250,0.5) 100%) !important;
+      transform: translateX(2px);
+    }
+  }
+}
+
+// ── Status Chips ──────────────────────────────────────────────────────────────
+.status-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'Figtree', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  display: inline-block;
+
+  &.active, &.confirmed, &.paid, &.available {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  &.pending, &.scheduled {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  &.cancelled, &.expired, &.offline {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+  &.completed {
+    background: var(--primary-light);
+    color: var(--primary-darker);
+  }
+  &.critical {
+    background: var(--danger);
+    color: white;
+    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.2);
+  }
+}
+
+// ── Forms ─────────────────────────────────────────────────────────────────────
+.form-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  box-shadow: var(--shadow-card-3d);
+  border: 1px solid var(--bg-glass-border);
+  max-width: 800px;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+    pointer-events: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+}
+
+mat-form-field { width: 100%; margin-bottom: 8px; }
+
+// ── Premium glass form fields (applied app-wide to every outline mat-form-field) ──
+.mat-mdc-form-field {
+  .mat-mdc-text-field-wrapper {
+    border-radius: 12px;
+    transition: background 0.25s ease;
+  }
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  &.mat-focused {
+    .mat-mdc-text-field-wrapper {
+      background: rgba(8, 145, 178, 0.04);
+    }
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__notch,
+    .mdc-notched-outline__trailing {
+      box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.10);
+    }
+  }
+  &:hover:not(.mat-focused) .mat-mdc-text-field-wrapper {
+    background: rgba(8, 145, 178, 0.015);
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-height) - 48px);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-alt);
+}
+
+.message-bubble {
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  font-family: 'Noto Sans', sans-serif;
+
+  &.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 8px rgba(8,145,178,0.3);
+  }
+
+  &.assistant {
+    align-self: flex-start;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-xs);
+  }
+}
+
+.disclaimer-banner {
+  background: #fffbeb;
+  border-left: 4px solid var(--warning);
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  color: #78350f;
+  font-family: 'Noto Sans', sans-serif;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+// ── Emergency Cards ───────────────────────────────────────────────────────────
+.emergency-card {
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--ease-base);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+  }
+}
+
+// ── Animations ────────────────────────────────────────────────────────────────
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px var(--glow-primary); }
+  50%       { box-shadow: 0 0 24px var(--glow-primary), 0 0 48px var(--glow-primary); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in    { animation: fadeIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+.fade-left  { animation: fadeInLeft 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+.slide-up   { animation: slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+// Staggered children animations
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+// ── Scrollbar ─────────────────────────────────────────────────────────────────
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-alt); }
+::-webkit-scrollbar-thumb { background: var(--primary-mid); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .main-content { margin-left: 0; }
+  .page-content  { padding: 16px; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  UI/UX PRO MAX — Enterprise Healthcare SaaS System
+//  Methodology: 161 industry rules × 67 styles × healthcare domain
+//  Applied: prefers-reduced-motion, focus rings, Z-index scale, WCAG AA,
+//           typography system, mobile breakpoints, touch targets,
+//           skip links, empty states, toast, micro-interactions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── 1. Motion System — WCAG 2.1 AA Compliance ─────────────────────────────────
+// All animations must respect OS preference. This single block disables ALL
+// animations for users with vestibular disorders or motion sensitivity.
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration:       0.01ms !important;
+    scroll-behavior:           auto !important;
+  }
+  .fade-in, .fade-left, .slide-up {
+    animation: none !important;
+  }
+}
+
+// ── 2. Z-Index Scale — Systematic (no arbitrary large numbers) ─────────────────
+:root {
+  --z-base:     0;
+  --z-raised:   10;    // card hover lift
+  --z-dropdown: 200;   // dropdowns, popovers
+  --z-sticky:   300;   // sticky headers
+  --z-sidebar:  400;   // sidebar navigation
+  --z-navbar:   500;   // top navbar
+  --z-overlay:  600;   // modal backdrops
+  --z-modal:    700;   // modal dialogs
+  --z-toast:    800;   // toast notifications
+  --z-tooltip:  900;   // tooltips (always on top)
+  --z-critical: 1000;  // critical alerts, emergency banners
+
+  // Typography scale — modular (matches UX Pro Max 12-14-16-18-24-32 scale)
+  --text-xs:   0.75rem;   // 12px
+  --text-sm:   0.875rem;  // 14px
+  --text-base: 1rem;      // 16px — minimum for mobile body
+  --text-lg:   1.125rem;  // 18px
+  --text-xl:   1.25rem;   // 20px
+  --text-2xl:  1.5rem;    // 24px
+  --text-3xl:  2rem;      // 32px
+  --text-4xl:  2.5rem;    // 40px
+
+  // Line heights (UX Pro Max: 1.5-1.75 for body)
+  --leading-tight:  1.25;
+  --leading-snug:   1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed:1.625;
+  --leading-loose:  1.75;
+
+  // Touch targets (UX Pro Max: min 44×44px, 8px spacing)
+  --touch-target: 44px;
+  --touch-gap:    8px;
+
+  // Breakpoints (UX Pro Max: 375, 768, 1024, 1440)
+  --bp-mobile:  375px;
+  --bp-tablet:  768px;
+  --bp-laptop:  1024px;
+  --bp-desktop: 1440px;
+
+  // Content width (UX Pro Max: 65-75ch max for readability)
+  --prose-width: 72ch;
+}
+
+// Apply systematic Z-index to known elements
+.sidebar { z-index: var(--z-sidebar) !important; }
+.navbar  { z-index: var(--z-navbar)  !important; }
+.modal-overlay, .cdk-overlay-backdrop { z-index: var(--z-overlay) !important; }
+.mat-mdc-dialog-container { z-index: var(--z-modal) !important; }
+.mat-mdc-snack-bar-container { z-index: var(--z-toast) !important; }
+.mat-mdc-tooltip { z-index: var(--z-tooltip) !important; }
+
+// ── 3. Focus Ring System — Keyboard Navigation (WCAG AA) ──────────────────────
+// Remove browser default and replace with consistent visible ring
+:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+// Remove for mouse users
+:focus:not(:focus-visible) { outline: none !important; }
+
+// Angular Material button focus
+.mat-mdc-button:focus-visible,
+.mat-mdc-icon-button:focus-visible,
+.mat-mdc-raised-button:focus-visible,
+.mat-mdc-stroked-button:focus-visible,
+.mat-mdc-fab:focus-visible {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 3px !important;
+}
+
+// Navigation items keyboard focus
+.nav-item:focus-visible {
+  outline: 2px solid #22d3ee !important;
+  outline-offset: -2px !important;
+  border-radius: 0 28px 28px 0;
+}
+
+// ── 4. Skip Link — Keyboard Navigation Accessibility ──────────────────────────
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: var(--z-critical);
+  background: var(--primary);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 0 0 8px 8px;
+  font-family: 'Figtree', sans-serif;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition: top 0.2s ease;
+
+  &:focus { top: 0; }
+}
+
+// ── 5. Body Typography — UX Pro Max Standards ──────────────────────────────────
+body {
+  font-size: var(--text-base);       // 16px minimum
+  line-height: var(--leading-normal); // 1.5 line height
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+// Prose content (limit to 65-75ch for readability)
+.prose, .report-text, .ai-report pre, .chat-messages .message-bubble {
+  max-width: var(--prose-width);
+  line-height: var(--leading-relaxed);
+}
+
+// ── 6. Touch Targets — 44×44px minimum with 8px spacing ──────────────────────
+// All interactive elements must have minimum 44px hit target
+button, [role="button"], a, select, input[type="checkbox"], input[type="radio"] {
+  min-height: var(--touch-target);
+  touch-action: manipulation; // eliminates 300ms tap delay
+}
+
+// Exception: icon buttons can be smaller visually but need min touch area
+.mat-mdc-icon-button {
+  min-width:  var(--touch-target) !important;
+  min-height: var(--touch-target) !important;
+}
+
+// Small tag/chip elements are exempt (not primary actions)
+.status-chip, .cat-chip, .dx-chip, .tag, .sev-chip { min-height: unset; }
+
+// ── 7. Global Scroll Behavior ──────────────────────────────────────────────────
+html { scroll-behavior: smooth; }
+
+// Use dynamic viewport height on mobile (avoids browser chrome issues)
+.app-container {
+  min-height: 100dvh;
+  height: 100dvh;
+}
+
+// Reserve space for async content to prevent layout shift
+.stat-card .stat-value:empty::after,
+.summary-num:empty::after {
+  content: '—';
+  opacity: 0.3;
+}
+
+// ── 8. Responsive Breakpoint System — 375 / 768 / 1024 / 1440 ─────────────────
+
+// Mobile (375px) — minimum baseline
+@media (max-width: 480px) {
+  html { font-size: 15px; }  // Slightly smaller base on very small screens
+  .page-content { padding: 12px; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .page-header h1 { font-size: 1.35rem; }
+
+  // Stack stat cards on mobile
+  .stats-grid, .stats-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px;
+  }
+
+  // Full-width buttons on mobile
+  .header-actions { flex-direction: column; width: 100%; button { width: 100%; } }
+
+  // Prevent horizontal scroll
+  * { max-width: 100%; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+// Tablet (768px)
+@media (min-width: 769px) and (max-width: 1023px) {
+  .page-content { padding: 20px 24px; }
+  .form-row-3   { grid-template-columns: 1fr 1fr; }
+
+  // Collapse sidebar on tablet by default
+  :root { --sidebar-width: 64px; }
+}
+
+// Laptop (1024px)
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .page-content { padding: 80px 24px 24px; }
+}
+
+// Large desktop (1440px+)
+@media (min-width: 1440px) {
+  .page-content { padding: 80px 40px 40px; }
+  .page-header h1 { font-size: 1.9rem; }
+}
+
+// ── 9. Enhanced Toast Notifications — Auto-dismiss & WCAG ─────────────────────
+.success-snack .mdc-snackbar__surface {
+  background: #065f46 !important;
+  color: white !important;
+  border-left: 4px solid #34d399;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(5,150,105,0.3) !important;
+  font-family: 'Noto Sans', sans-serif;
+  font-size: var(--text-sm);
+}
+.error-snack .mdc-snackbar__surface {
+  background: #7f1d1d !important;
+  color: white !important;
+  border-left: 4px solid #f87171;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(220,38,38,0.3) !important;
+  font-family: 'Noto Sans', sans-serif;
+  font-size: var(--text-sm);
+}
+.warning-snack .mdc-snackbar__surface {
+  background: #78350f !important;
+  color: white !important;
+  border-left: 4px solid #fbbf24;
+  border-radius: 12px !important;
+}
+.mat-mdc-snack-bar-container {
+  border-radius: 12px !important;
+  margin-bottom: 24px !important;
+  margin-right: 24px !important;
+}
+
+// ── 10. Empty State — Standardized System ─────────────────────────────────────
+.empty-state-global {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  gap: 16px;
+
+  .empty-icon-wrap {
+    width: 80px; height: 80px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, var(--primary-light), rgba(224,247,250,0.5));
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--primary-mid);
+    mat-icon { font-size: 40px; width: 40px; height: 40px; color: var(--primary); opacity: 0.7; }
+  }
+
+  h3 {
+    font-family: 'Figtree', sans-serif;
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  p {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 360px;
+    line-height: var(--leading-relaxed);
+  }
+
+  .empty-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+}
+
+// ── 11. Error State — Recovery-Focused UI ─────────────────────────────────────
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 12px;
+  background: #fff5f5;
+  border-radius: var(--radius-lg);
+  border: 1px solid #fecaca;
+
+  mat-icon { font-size: 48px; width: 48px; height: 48px; color: var(--danger); }
+  h4 { font-family: 'Figtree', sans-serif; font-weight: 700; color: var(--danger); margin: 0; }
+  p  { font-size: var(--text-sm); color: #7f1d1d; margin: 0; max-width: 340px; line-height: var(--leading-relaxed); }
+}
+
+// ── 12. Micro-interactions — Subtle, Purposeful ────────────────────────────────
+// Buttons: immediate press feedback
+button:active:not(:disabled),
+[role="button"]:active:not([aria-disabled="true"]) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease-out;
+}
+
+// Cards: smooth lift (ease-out for entry per UX Pro Max)
+.mat-mdc-card, mat-card, .glass-card, .stat-card {
+  transition: box-shadow 200ms ease-out, transform 200ms ease-out, border-color 200ms ease-out !important;
+}
+
+// Links: visible underline on focus for accessibility
+a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+// Disabled state — clear visual signal
+[disabled], [aria-disabled="true"], .mat-mdc-button[disabled] {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+// ── 13. Loading States — Skeleton screen approach ──────────────────────────────
+.skeleton {
+  background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// Page-level loading indicator
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-family: 'Noto Sans', sans-serif;
+}
+
+// ── 14. WCAG Color Contrast — Healthcare-Critical ──────────────────────────────
+// Ensure status text always meets 4.5:1 contrast ratio
+// These are the verified safe combinations for MedCare360 palette:
+.text-success { color: #065f46 !important; } // 7.5:1 on white
+.text-danger  { color: #991b1b !important; } // 7.0:1 on white
+.text-warning { color: #78350f !important; } // 8.4:1 on white
+.text-info    { color: #0c4a6e !important; } // 9.2:1 on white
+.text-muted   { color: #4b5563 !important; } // 5.9:1 on white (improved from #64748b which is 4.6:1)
+
+// ── 15. Print Styles — For Lab Reports & Prescriptions ────────────────────────
+@media print {
+  :root { --bg-page: white; --bg-card: white; }
+
+  .sidebar, app-sidebar, .navbar, app-navbar,
+  .page-header .header-actions,
+  mat-snack-bar-container,
+  .mat-mdc-fab, .mat-fab { display: none !important; }
+
+  .page-content {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .main-content { margin-left: 0 !important; }
+
+  @page { margin: 20mm; size: A4; }
+}
+
+// ── 16. Utility Classes — Pro Max Helpers ──────────────────────────────────────
+.truncate     { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sr-only      { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }
+.not-sr-only  { position: static; width: auto; height: auto; padding: 0; margin: 0; overflow: visible; clip: auto; white-space: normal; }
+.cursor-pointer { cursor: pointer; }
+.select-none  { user-select: none; }
+
+// Semantic color tokens (used in templates)
+.bg-success-subtle { background: #d1fae5; color: #065f46; }
+.bg-danger-subtle  { background: #fee2e2; color: #991b1b; }
+.bg-warning-subtle { background: #fef3c7; color: #78350f; }
+.bg-info-subtle    { background: #e0f2fe; color: #0c4a6e; }
+
+// ── 17. Scrollbar — Cross-browser ─────────────────────────────────────────────
+// Firefox
+* { scrollbar-width: thin; scrollbar-color: var(--primary-mid) var(--bg-alt); }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  MAGIC MCP EQUIVALENT — Premium Component Upgrades 9-17
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Upgrade 9: Page Transition Animation ──────────────────────────────────────
+// Smooth route transitions on every page
+router-outlet + * {
+  animation: page-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  router-outlet + * { animation: none; }
+}
+
+// ── Upgrade 10: Emergency Cards — Critical Pulse System ───────────────────────
+.emergency-critical {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute; inset: -2px;
+    border-radius: inherit;
+    background: transparent;
+    border: 2px solid #dc2626;
+    animation: emergency-pulse 1.5s cubic-bezier(0.4,0,0.6,1) infinite;
+    pointer-events: none;
+  }
+}
+@keyframes emergency-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(1.02); }
+}
+
+.emergency-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #dc2626; color: white;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 800;
+  font-family: 'Figtree', sans-serif;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  animation: emergency-pulse 1.5s infinite;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.25);
+  mat-icon { font-size: 14px; width: 14px; height: 14px; }
+}
+
+// ── Upgrade 11: Analytics Period Selector ─────────────────────────────────────
+.period-selector {
+  display: inline-flex;
+  background: var(--bg-alt);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+
+  button {
+    border: none; background: transparent;
+    border-radius: 8px; padding: 5px 14px;
+    font-family: 'Figtree', sans-serif;
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s ease-out;
+    min-height: unset; // exempt from touch target rule
+
+    &.active, &:hover {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(8,145,178,0.12);
+    }
+  }
+}
+
+// ── Upgrade 12: Appointment Cards — Calendar-Style ───────────────────────────
+.appointment-card-premium {
+  display: flex; gap: 16px; align-items: center;
+  padding: 14px 18px;
+  background: white;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-light);
+  transition: box-shadow 200ms ease-out, border-color 200ms ease-out;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0 8px 24px rgba(8,145,178,0.12);
+    border-color: rgba(8,145,178,0.3);
+  }
+
+  .apt-date-block {
+    min-width: 52px; text-align: center;
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    border-radius: 12px; padding: 8px 4px;
+    color: white;
+    .apt-day   { font-size: 1.5rem; font-weight: 900; font-family: 'Figtree', sans-serif; line-height: 1; }
+    .apt-month { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; }
+  }
+  .apt-info { flex: 1; min-width: 0; }
+  .apt-patient { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); font-family: 'Figtree', sans-serif; }
+  .apt-doctor  { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+  .apt-time    { font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px; mat-icon { font-size: 14px; width: 14px; height: 14px; } }
+}
+
+// ── Upgrade 13: Blood Bank — Blood Type Badges ────────────────────────────────
+.blood-type-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 12px;
+  font-family: 'Figtree', sans-serif; font-weight: 900; font-size: 0.9rem;
+  color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+
+  &.blood-A-pos,  &.blood-A-neg  { background: linear-gradient(135deg,#dc2626,#b91c1c); }
+  &.blood-B-pos,  &.blood-B-neg  { background: linear-gradient(135deg,#2563eb,#1d4ed8); }
+  &.blood-O-pos,  &.blood-O-neg  { background: linear-gradient(135deg,#059669,#047857); }
+  &.blood-AB-pos, &.blood-AB-neg { background: linear-gradient(135deg,#7c3aed,#6d28d9); }
+}
+
+.blood-stock-bar {
+  height: 6px; border-radius: 3px; background: var(--border-light); overflow: hidden;
+  .fill {
+    height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    &.critical { background: #dc2626; }
+    &.low      { background: #f59e0b; }
+    &.good     { background: #059669; }
+  }
+}
+
+// ── Upgrade 14: Enhanced Status Chip System ────────────────────────────────────
+.status-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: 'Figtree', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex; align-items: center; gap: 5px;
+
+  &::before {
+    content: '';
+    width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+  }
+
+  &.active, &.confirmed, &.paid, &.available, &.completed {
+    background: #d1fae5; color: #065f46;
+    &::before { background: #059669; }
+  }
+  &.pending, &.scheduled, &.processing {
+    background: #fef3c7; color: #78350f;
+    &::before { background: #d97706; }
+  }
+  &.cancelled, &.expired, &.overdue {
+    background: #fee2e2; color: #991b1b;
+    &::before { background: #dc2626; }
+  }
+  &.in-progress, &.partial {
+    background: #e0f2fe; color: #0c4a6e;
+    &::before { background: #0891b2; }
+  }
+  &.critical {
+    background: #dc2626; color: white;
+    animation: emergency-pulse 1.5s infinite;
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.2);
+    &::before { background: white; }
+  }
+}
+
+// ── Upgrade 15: Form Validation States — WCAG Compliant ──────────────────────
+.mat-mdc-form-field {
+  // Error state — red border + icon
+  &.mat-form-field-invalid .mdc-notched-outline__leading,
+  &.mat-form-field-invalid .mdc-notched-outline__notch,
+  &.mat-form-field-invalid .mdc-notched-outline__trailing {
+    border-color: var(--danger) !important;
+    border-width: 2px !important;
+  }
+  &.mat-form-field-invalid .mat-mdc-text-field-wrapper {
+    background: rgba(220,38,38,0.02) !important;
+  }
+  // Success state
+  &.field-valid .mdc-notched-outline__leading,
+  &.field-valid .mdc-notched-outline__notch,
+  &.field-valid .mdc-notched-outline__trailing {
+    border-color: var(--accent) !important;
+  }
+}
+// Better error message
+mat-error {
+  font-size: 0.75rem !important;
+  font-family: 'Noto Sans', sans-serif !important;
+  display: flex !important; align-items: center !important; gap: 4px;
+  &::before { content: '⚠'; font-size: 0.7rem; }
+}
+
+// ── Upgrade 16: Lab Status Cards ──────────────────────────────────────────────
+.lab-result-card {
+  border-radius: 14px;
+  border: 1.5px solid var(--border-light);
+  padding: 14px 16px;
+  background: white;
+  transition: box-shadow 200ms ease-out;
+
+  &:hover { box-shadow: 0 8px 20px rgba(8,145,178,0.10); }
+
+  .lab-test-name { font-weight: 700; font-family: 'Figtree', sans-serif; color: var(--text-primary); }
+  .lab-result-val {
+    font-size: 1.4rem; font-weight: 900; font-family: 'Figtree', sans-serif;
+    &.abnormal-high { color: #dc2626; }
+    &.abnormal-low  { color: #2563eb; }
+    &.normal        { color: #059669; }
+  }
+  .lab-range { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+}
+
+// ── Upgrade 17: Pharmacy / Medicine Cards ─────────────────────────────────────
+.medicine-card-premium {
+  border-radius: 16px; border: 1.5px solid var(--border-light);
+  background: white; padding: 16px; cursor: pointer;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+
+  &:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(8,145,178,0.12); }
+
+  .med-name { font-weight: 700; font-family: 'Figtree', sans-serif; font-size: 0.95rem; }
+  .med-generic { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+  .med-stock-indicator {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px;
+    .stock-bar {
+      flex: 1; height: 4px; border-radius: 2px; background: var(--border-light);
+      .fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.4s ease-out; }
+    }
+    .stock-val { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
+  }
+
+  .low-stock-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fef3c7; color: #78350f; border-radius: 8px;
+    padding: 2px 8px; font-size: 0.68rem; font-weight: 700;
+    margin-top: 8px;
+    mat-icon { font-size: 12px; width: 12px; height: 12px; }
+  }
+}
+
+// ── Global Chart Card Enhancement ─────────────────────────────────────────────
+mat-card.chart-card, .chart-card {
+  border-radius: 18px !important;
+  border: 1px solid rgba(8,145,178,0.08) !important;
+  box-shadow: 0 4px 20px rgba(8,145,178,0.07) !important;
+  overflow: hidden !important;
+
+  mat-card-header {
+    padding: 14px 20px !important;
+    border-bottom: 1px solid rgba(8,145,178,0.07) !important;
+    background: linear-gradient(90deg, rgba(8,145,178,0.03), transparent) !important;
+    display: flex !important; align-items: center !important; justify-content: space-between !important;
+  }
+  mat-card-title {
+    font-family: 'Figtree', sans-serif !important;
+    font-weight: 700 !important; font-size: 0.95rem !important;
+    color: var(--text-primary) !important; margin: 0 !important;
+  }
+}
+
+// ── Global Card Hover Upgrade ─────────────────────────────────────────────────
+mat-card, .mat-mdc-card {
+  border-radius: 16px !important;
+  transition: box-shadow 200ms ease-out, transform 200ms ease-out !important;
+}
+
+// ── Sidebar User Profile Upgrade ─────────────────────────────────────────────
+.user-info {
+  // Improved user profile section in sidebar
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(8,145,178,0.3), transparent);
+  }
+}
+

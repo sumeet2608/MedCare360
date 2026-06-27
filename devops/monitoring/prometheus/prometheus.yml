@@ -1,0 +1,154 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    monitor: 'medcare360-monitor'
+    environment: 'production'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - 'alerts.yml'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ── Application Services ────────────────────────────────────
+  - job_name: 'medcare-backend'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['backend:5000']
+        labels: { service: 'backend', tier: 'core' }
+
+  - job_name: 'medcare-api-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['api-gateway:3000']
+        labels: { service: 'api-gateway', tier: 'edge' }
+
+  - job_name: 'medcare-auth-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['auth-service:3001']
+        labels: { service: 'auth-service', tier: 'core' }
+
+  - job_name: 'medcare-patient-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['patient-service:3002']
+        labels: { service: 'patient-service', tier: 'clinical' }
+
+  - job_name: 'medcare-doctor-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['doctor-service:3003']
+        labels: { service: 'doctor-service', tier: 'clinical' }
+
+  - job_name: 'medcare-appointment-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['appointment-service:3004']
+        labels: { service: 'appointment-service', tier: 'clinical' }
+
+  - job_name: 'medcare-pharmacy-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['pharmacy-service:3005']
+        labels: { service: 'pharmacy-service', tier: 'clinical' }
+
+  - job_name: 'medcare-billing-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['billing-service:3006']
+        labels: { service: 'billing-service', tier: 'finance' }
+
+  - job_name: 'medcare-lab-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['lab-service:3007']
+        labels: { service: 'lab-service', tier: 'clinical' }
+
+  - job_name: 'medcare-ambulance-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['ambulance-service:3008']
+        labels: { service: 'ambulance-service', tier: 'emergency' }
+
+  - job_name: 'medcare-notification-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['notification-service:3009']
+        labels: { service: 'notification-service', tier: 'support' }
+
+  - job_name: 'medcare-ai-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['ai-service:3010']
+        labels: { service: 'ai-service', tier: 'ai' }
+
+  - job_name: 'medcare-analytics-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['analytics-service:3011']
+        labels: { service: 'analytics-service', tier: 'support' }
+
+  - job_name: 'medcare-inventory-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['inventory-service:3012']
+        labels: { service: 'inventory-service', tier: 'support' }
+
+  # ── Infrastructure ──────────────────────────────────────────
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+
+  # ── Kubernetes auto-discovery ───────────────────────────────
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ['medcare360']
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__

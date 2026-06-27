@@ -1,0 +1,138 @@
+<div class="fade-in">
+  <div *ngIf="loading" style="text-align:center;padding:80px"><mat-spinner diameter="56"></mat-spinner></div>
+
+  <div *ngIf="!loading && patient">
+    <div class="page-header">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="patient-avatar">{{ patient.user?.firstName?.[0] }}{{ patient.user?.lastName?.[0] }}</div>
+        <div>
+          <h1>{{ patient.user?.firstName }} {{ patient.user?.lastName }}</h1>
+          <p>{{ patient.patientId }} · {{ age }} years · {{ patient.gender | titlecase }} · Blood: {{ patient.bloodGroup || 'Unknown' }}</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="status-chip" [class]="patient.isAdmitted ? 'pending' : 'active'">
+          <mat-icon style="font-size:14px;width:14px;height:14px">{{ patient.isAdmitted ? 'hotel' : 'person' }}</mat-icon>
+          {{ patient.isAdmitted ? 'Admitted' : 'Outpatient' }}
+        </span>
+
+        <!-- Discharge button — only visible when admitted -->
+        <button mat-stroked-button color="warn" *ngIf="patient.isAdmitted"
+                (click)="dischargePatient()" [disabled]="discharging"
+                style="border-color:#dc2626;color:#dc2626">
+          <mat-spinner *ngIf="discharging" diameter="16" style="display:inline-block;margin-right:4px"></mat-spinner>
+          <mat-icon *ngIf="!discharging">logout</mat-icon>
+          {{ discharging ? 'Discharging...' : 'Discharge Patient' }}
+        </button>
+
+        <!-- Admit button — only visible when outpatient -->
+        <button mat-stroked-button *ngIf="!patient.isAdmitted"
+                (click)="admitPatient()" style="border-color:#059669;color:#059669">
+          <mat-icon>login</mat-icon> Admit Patient
+        </button>
+
+        <button mat-stroked-button [routerLink]="['/patients', patient._id, 'edit']"><mat-icon>edit</mat-icon> Edit</button>
+        <button mat-raised-button color="primary" routerLink="/appointments/new"><mat-icon>calendar_today</mat-icon> Book Appointment</button>
+
+        <!-- Archive = full discharge + remove from active list -->
+        <button mat-stroked-button *ngIf="!patient.isArchived"
+                (click)="archivePatient()" [disabled]="archiving"
+                style="border-color:#6b7280;color:#6b7280"
+                matTooltip="Fully discharge and remove from active patient list">
+          <mat-spinner *ngIf="archiving" diameter="14" style="display:inline-block;margin-right:4px"></mat-spinner>
+          <mat-icon *ngIf="!archiving">archive</mat-icon>
+          {{ archiving ? 'Archiving...' : 'Archive & Clear' }}
+        </button>
+        <span *ngIf="patient.isArchived" class="status-chip cancelled" style="display:inline-flex;align-items:center;gap:4px">
+          <mat-icon style="font-size:13px;width:13px;height:13px">archive</mat-icon> Archived
+        </span>
+      </div>
+    </div>
+
+    <mat-tab-group [(selectedIndex)]="activeTab">
+      <mat-tab label="Overview">
+        <div class="tab-content">
+          <div class="detail-grid">
+            <mat-card>
+              <mat-card-header><mat-card-title>Contact Information</mat-card-title></mat-card-header>
+              <mat-card-content>
+                <div class="info-row"><mat-icon>email</mat-icon><span>{{ patient.user?.email }}</span></div>
+                <div class="info-row"><mat-icon>phone</mat-icon><span>{{ patient.user?.phone || 'Not provided' }}</span></div>
+                <div class="info-row"><mat-icon>location_on</mat-icon>
+                  <span>{{ patient.address?.street }}, {{ patient.address?.city }}, {{ patient.address?.state }} {{ patient.address?.zipCode }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card>
+              <mat-card-header><mat-card-title>Emergency Contact</mat-card-title></mat-card-header>
+              <mat-card-content>
+                <div class="info-row"><mat-icon>person</mat-icon><span>{{ patient.emergencyContact?.name || 'Not provided' }}</span></div>
+                <div class="info-row"><mat-icon>group</mat-icon><span>{{ patient.emergencyContact?.relationship || '—' }}</span></div>
+                <div class="info-row"><mat-icon>phone</mat-icon><span>{{ patient.emergencyContact?.phone || '—' }}</span></div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card>
+              <mat-card-header><mat-card-title>Insurance</mat-card-title></mat-card-header>
+              <mat-card-content>
+                <div class="info-row"><mat-icon>health_and_safety</mat-icon><span>{{ patient.insurance?.provider || 'Not provided' }}</span></div>
+                <div class="info-row"><mat-icon>badge</mat-icon><span>{{ patient.insurance?.policyNumber || '—' }}</span></div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card *ngIf="patient.chronicConditions?.length">
+              <mat-card-header><mat-card-title>Chronic Conditions</mat-card-title></mat-card-header>
+              <mat-card-content>
+                <mat-chip-listbox>
+                  <mat-chip *ngFor="let c of patient.chronicConditions" color="warn">{{ c }}</mat-chip>
+                </mat-chip-listbox>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Allergies">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-content *ngIf="patient.allergies?.length === 0" style="padding:32px;text-align:center;color:#bbb">No allergies recorded</mat-card-content>
+            <mat-list *ngIf="patient.allergies?.length > 0">
+              <mat-list-item *ngFor="let a of patient.allergies">
+                <mat-icon mat-list-icon color="warn">warning</mat-icon>
+                <div mat-line><strong>{{ a.allergen }}</strong></div>
+                <div mat-line>{{ a.reaction }} — Severity: {{ a.severity | titlecase }}</div>
+              </mat-list-item>
+            </mat-list>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Vitals">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-content *ngIf="!patient.vitals?.length" style="padding:32px;text-align:center;color:#bbb">No vitals recorded yet</mat-card-content>
+            <mat-table [dataSource]="patient.vitals || []" *ngIf="patient.vitals?.length">
+              <ng-container matColumnDef="date"><mat-header-cell *matHeaderCellDef>Date</mat-header-cell><mat-cell *matCellDef="let v">{{ v.recordedAt | date:'short' }}</mat-cell></ng-container>
+              <ng-container matColumnDef="bp"><mat-header-cell *matHeaderCellDef>Blood Pressure</mat-header-cell><mat-cell *matCellDef="let v">{{ v.bloodPressure || '—' }}</mat-cell></ng-container>
+              <ng-container matColumnDef="hr"><mat-header-cell *matHeaderCellDef>Heart Rate</mat-header-cell><mat-cell *matCellDef="let v">{{ v.heartRate || '—' }} bpm</mat-cell></ng-container>
+              <ng-container matColumnDef="temp"><mat-header-cell *matHeaderCellDef>Temp (°C)</mat-header-cell><mat-cell *matCellDef="let v">{{ v.temperature || '—' }}</mat-cell></ng-container>
+              <ng-container matColumnDef="spo2"><mat-header-cell *matHeaderCellDef>SpO2 %</mat-header-cell><mat-cell *matCellDef="let v">{{ v.oxygenSaturation || '—' }}</mat-cell></ng-container>
+              <mat-header-row *matHeaderRowDef="['date','bp','hr','temp','spo2']"></mat-header-row>
+              <mat-row *matRowDef="let r; columns:['date','bp','hr','temp','spo2']"></mat-row>
+            </mat-table>
+          </mat-card>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>
+
+<style>
+.patient-avatar { width:64px;height:64px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700; }
+.tab-content { padding:16px 0; }
+.detail-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:16px; }
+.info-row { display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5; }
+.info-row mat-icon { color:var(--primary);font-size:20px;width:20px;height:20px; }
+@media(max-width:768px) { .detail-grid { grid-template-columns:1fr; } }
+</style>

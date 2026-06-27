@@ -1,0 +1,319 @@
+// ── Page wrapper ──────────────────────────────────────────────────
+.imaging-page { padding-bottom: 0; }
+
+// ── Header ────────────────────────────────────────────────────────
+.page-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.page-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 1.7rem; font-weight: 800; font-family: 'Figtree', sans-serif;
+  color: var(--text-primary); margin: 0 0 4px;
+  .title-icon { font-size: 28px; width: 28px; height: 28px; color: var(--primary); }
+}
+.page-sub { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+.header-btns { display: flex; gap: 10px; align-items: center; }
+.btn-upload { background: linear-gradient(135deg,#0891b2,#0e7490) !important; color: white !important; border-radius: 10px !important; }
+
+// ── Stats ─────────────────────────────────────────────────────────
+.stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.stat-chip {
+  display: flex; align-items: center; gap: 14px; padding: 14px 20px !important;
+  border-radius: 14px !important; border: 1px solid var(--border-light) !important;
+  flex: 1; min-width: 130px; border-left: 4px solid !important; background: white !important;
+  .chip-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; mat-icon { font-size: 22px; width: 22px; height: 22px; } }
+  .chip-val  { font-size: 1.6rem; font-weight: 800; font-family: 'Figtree', sans-serif; line-height: 1; }
+  .chip-lbl  { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+}
+
+// ── Filter row ────────────────────────────────────────────────────
+.filter-row {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: nowrap;
+}
+
+// Custom search bar — no mat-form-field so it never clips
+.search-wrap {
+  display: flex; align-items: center; gap: 8px;
+  flex: 2; min-width: 0;
+  background: white; border: 1px solid var(--border-light);
+  border-radius: 10px; padding: 0 12px; height: 56px;  // match mat-form-field outline height
+  &:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(8,145,178,0.08); }
+  .search-icon { color: var(--text-muted); font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; }
+}
+.search-input {
+  flex: 1; min-width: 0; border: none; outline: none;
+  font-family: 'Noto Sans', sans-serif; font-size: 0.875rem;
+  color: var(--text-primary); background: transparent;
+  &::placeholder { color: var(--text-muted); }
+}
+
+.filter-select { flex: 1; min-width: 130px; max-width: 180px; }
+
+// ── Loading ───────────────────────────────────────────────────────
+.loading-state { display: flex; flex-direction: column; align-items: center; padding: 60px; gap: 16px; color: var(--text-muted); }
+
+// ── Main content area: side-by-side always ────────────────────────
+// CRITICAL: fixed height so neither panel can grow the page
+.content-area {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  // 100vh minus: navbar (~64px) + page-header (~90px) + stats (~90px) + filter (~72px) + gaps (~30px)
+  height: calc(100vh - 346px);
+  min-height: 480px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: unset;
+  }
+}
+
+// ── Studies list ──────────────────────────────────────────────────
+.studies-list {
+  display: flex; flex-direction: column; gap: 8px;
+  overflow-y: auto;         // list scrolls independently
+  min-height: 0;            // CRITICAL: grid child must opt-in to shrink
+  padding-right: 4px;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(8,145,178,0.2); border-radius: 2px; }
+}
+
+.study-card {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-radius: 12px; cursor: pointer; transition: all 0.18s;
+  border: 1.5px solid var(--border-light); background: #ffffff; flex-shrink: 0;
+  &:hover { border-color: #7dd3fa; background: #f0f9ff; box-shadow: 0 2px 10px rgba(8,145,178,0.1); }
+  &.selected { border-color: var(--primary); background: #e0f2fe; box-shadow: 0 2px 10px rgba(8,145,178,0.15); }
+}
+.study-modality {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  width: 48px; flex-shrink: 0; background: #e0f2fe; border-radius: 10px; padding: 7px 4px;
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  .modality-code { font-size: 0.6rem; font-weight: 700; color: #0891b2; }
+}
+.study-info   { flex: 1; min-width: 0; }
+.study-patient { font-weight: 700; font-family: 'Figtree', sans-serif; font-size: 0.875rem; color: var(--text-primary); }
+.study-id     { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+.study-meta   { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 0.72rem; color: var(--text-secondary); .urgency-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; } }
+.study-ref    { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+.status-pill  { padding: 3px 9px; border-radius: 20px; font-size: 0.67rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.no-studies   { display: flex; flex-direction: column; align-items: center; padding: 40px; color: var(--text-muted); gap: 8px; mat-icon { font-size: 36px; } }
+
+// ── DICOM Viewer panel ────────────────────────────────────────────
+.dicom-viewer {
+  height: 100%;            // fill grid row — CRITICAL
+  min-height: 0;           // allow grid to constrain it — CRITICAL
+  border-radius: 16px;
+  border: 1.5px solid var(--border-light);
+  background: white;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; color: var(--text-muted);
+  mat-icon { font-size: 52px; width: 52px; height: 52px; opacity: 0.3; }
+  p { font-size: 0.85rem; }
+}
+
+.viewer-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 12px 16px; background: linear-gradient(135deg,#0d2150,#0891b2);
+  color: white; flex-shrink: 0;       // never shrink the header
+}
+.viewer-title { font-weight: 700; font-family: 'Figtree', sans-serif; font-size: 0.95rem; color: white; }
+.viewer-sub   { font-size: 0.75rem; opacity: 0.75; margin-top: 2px; color: white; }
+
+// viewer-body must fill all remaining height after the header
+.viewer-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;           // grow inside .dicom-viewer flex column
+  min-height: 0;     // CRITICAL: flex child shrink fix
+  overflow: hidden;
+  @media (max-width: 860px) { grid-template-columns: 1fr; }
+}
+
+// ── Image panel ───────────────────────────────────────────────────
+.image-panel {
+  display: flex; flex-direction: column;
+  background: #050505;
+  overflow: hidden;
+  min-height: 0;     // CRITICAL: grid child shrink fix
+}
+
+.viewer-toolbar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 4px 8px;
+  background: #111; border-bottom: 1px solid #222;
+  flex-shrink: 0;
+  z-index: 2;
+
+  // Target both legacy + MDC Angular Material icon buttons
+  button[mat-icon-button],
+  button.mat-icon-button,
+  button.mat-mdc-icon-button {
+    color: rgba(255,255,255,0.75) !important;
+    &:hover { color: #4ade80 !important; background: rgba(74,222,128,0.14) !important; }
+    &.btn-active { color: #4ade80 !important; background: rgba(74,222,128,0.18) !important; }
+    .mat-icon, mat-icon { font-size: 20px; width: 20px; height: 20px; color: inherit !important; }
+    // MDC ripple fix
+    .mat-mdc-button-ripple, .mdc-icon-button__ripple { border-radius: 8px; }
+  }
+
+  .toolbar-sep {
+    width: 1px; height: 20px; background: rgba(255,255,255,0.1); margin: 0 4px;
+  }
+
+  .zoom-badge {
+    margin-left: auto; font-family: monospace; font-size: 0.7rem;
+    color: #4ade80; padding: 2px 6px; background: rgba(74,222,128,0.1); border-radius: 4px;
+  }
+
+  .replace-btn-icon {
+    color: #38bdf8 !important;
+    &:hover { color: #4ade80 !important; background: rgba(74,222,128,0.12) !important; }
+    .mat-icon, mat-icon { color: inherit !important; }
+  }
+  .clear-btn-icon {
+    color: rgba(255,255,255,0.4) !important;
+    &:hover { color: #f87171 !important; background: rgba(248,113,113,0.12) !important; }
+    .mat-icon, mat-icon { color: inherit !important; }
+  }
+}
+
+.dicom-canvas {
+  flex: 1;            // fill remaining image-panel height
+  min-height: 0;      // CRITICAL
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: #050505; position: relative; cursor: crosshair;
+}
+
+// zoom + filter applied here — transitions make controls feel smooth
+.image-container {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  transform-origin: center center;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.xray-svg { width: 100%; height: 100%; object-fit: contain; display: block; }
+.xray-meta-overlay { display: none; }
+.uploaded-img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+
+// In-viewer upload zone (for studies without a real image)
+.viewer-upload-zone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 32px 24px; text-align: center; cursor: pointer;
+  width: 100%; height: 100%;
+  border: 2px dashed rgba(255,255,255,0.15);
+  transition: background 0.2s, border-color 0.2s;
+  &:hover { background: rgba(255,255,255,0.04); border-color: rgba(74,222,128,0.4); }
+
+  .vuz-icon { font-size: 52px; width: 52px; height: 52px; color: rgba(8,145,178,0.6); }
+  .vuz-title { font-size: 1rem; font-weight: 700; color: white; margin: 0; }
+  .vuz-modality { font-size: 0.82rem; color: rgba(255,255,255,0.55); margin: 0; }
+  .vuz-note { font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 0; }
+  .vuz-btn {
+    margin-top: 8px !important;
+    background: linear-gradient(135deg,#0891b2,#0e7490) !important;
+    color: white !important; border-radius: 10px !important;
+    mat-icon { font-size: 18px; }
+  }
+}
+
+// ── Report section ────────────────────────────────────────────────
+.report-section {
+  display: flex; flex-direction: column;
+  border-left: 1px solid var(--border-light);
+  overflow: hidden;
+  min-height: 0;      // CRITICAL: grid child shrink fix
+}
+
+.report-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px; border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+.report-title { font-weight: 700; font-family: 'Figtree', sans-serif; font-size: 0.9rem; color: var(--text-primary); }
+.btn-ai { border-color: var(--primary) !important; color: var(--primary) !important; border-radius: 8px !important; font-size: 11px !important; display: flex; align-items: center; gap: 4px; }
+
+// THIS is what prevents the AI draft from expanding the panel
+.report-scroll {
+  flex: 1;
+  min-height: 0;      // CRITICAL — without this overflow-y: auto has no effect
+  overflow-y: auto;
+  padding: 14px 16px;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(8,145,178,0.18); border-radius: 2px; }
+}
+
+.report-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 10px 0 4px; }
+.report-text { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.65; white-space: pre-wrap; font-family: 'Noto Sans', sans-serif; margin: 0; }
+.ai-report { background: #f0f9ff; border-radius: 10px; padding: 10px 12px; margin-top: 8px; border: 1px solid #bae6fd; }
+.ai-report-badge { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 700; color: #0891b2; margin-bottom: 8px; mat-icon { font-size: 15px; width: 15px; height: 15px; } }
+.no-report { display: flex; flex-direction: column; align-items: center; padding: 24px; gap: 8px; color: var(--text-muted); mat-icon { font-size: 30px; } p { font-size: 0.8rem; text-align: center; } }
+
+// ── Upload Modal ──────────────────────────────────────────────────
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.upload-modal {
+  width: 100%; max-width: 640px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  background: white; border-radius: 20px; overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; background: linear-gradient(135deg,#0891b2,#0e7490);
+  color: white; font-family: 'Figtree', sans-serif; font-size: 1rem; font-weight: 700;
+  flex-shrink: 0;
+  button { color: white !important; }
+}
+.modal-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border-light); flex-shrink: 0; }
+
+.upload-form {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px;
+  mat-form-field { width: 100%; }
+}
+
+.image-upload-zone {
+  border: 2px dashed var(--border); border-radius: 14px; padding: 24px;
+  text-align: center; background: var(--bg-alt);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+  min-height: 120px; justify-content: center;
+  &:hover { border-color: var(--primary); background: #f0f9ff; }
+  &.has-image { padding: 12px; border-style: solid; border-color: #7dd3fa; background: #f0f9ff; }
+  mat-icon { font-size: 40px; width: 40px; height: 40px; color: var(--primary); }
+  p { font-size: 0.875rem; font-weight: 600; margin: 0; color: var(--primary); }
+  .drop-note { font-size: 0.72rem; }
+}
+.preview-img { max-height: 140px; max-width: 100%; border-radius: 10px; object-fit: contain; border: 2px solid #7dd3fa; }
+.preview-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; word-break: break-all; }
+
+.ai-analyze-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn-ai-analyze {
+  border-color: #7c3aed !important; color: #7c3aed !important;
+  border-radius: 10px !important; font-size: 0.82rem !important;
+  display: flex; align-items: center; gap: 5px;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &:hover { background: rgba(124,58,237,0.05) !important; }
+}
+.ai-analyze-note { font-size: 0.72rem; color: var(--text-muted); }
+
+.ai-upload-report {
+  background: #f5f3ff; border-radius: 12px; padding: 12px 14px;
+  border: 1px solid #ddd6fe; max-height: 220px; overflow-y: auto;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.2); border-radius: 2px; }
+  .ai-report-badge mat-icon { color: #7c3aed; }
+}

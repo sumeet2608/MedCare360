@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: medcare360
+  labels:
+    app: medcare360
+    environment: production

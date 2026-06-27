@@ -1,0 +1,61 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Appointments</h1><p>{{ total }} total appointments</p></div>
+    <button mat-raised-button color="primary" routerLink="/appointments/new"><mat-icon>add</mat-icon> Book Appointment</button>
+  </div>
+
+  <!-- Stat Summary Row — matches MedCare360 glassmorphism design -->
+  <div class="site-stats-row">
+    <div class="site-stat-card" *ngFor="let s of [
+      {label:'Total',     value:total,                   icon:'event_note',  color:'#0891b2', bg:'#e0f2fe'},
+      {label:'Confirmed', value:countByStatus('confirmed'), icon:'check_circle', color:'#059669', bg:'#d1fae5'},
+      {label:'Pending',   value:countByStatus('scheduled'), icon:'schedule',    color:'#d97706', bg:'#fef3c7'},
+      {label:'Cancelled', value:countByStatus('cancelled'), icon:'cancel',      color:'#dc2626', bg:'#fee2e2'}
+    ]">
+      <div class="ssc-icon" [style.background]="s.bg"><mat-icon [style.color]="s.color">{{ s.icon }}</mat-icon></div>
+      <div class="ssc-body">
+        <div class="ssc-value">{{ s.value }}</div>
+        <div class="ssc-label">{{ s.label }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+    <mat-form-field appearance="outline" style="width:200px;margin-bottom:-1.25em">
+      <mat-label>Status Filter</mat-label>
+      <mat-select [(ngModel)]="statusFilter" (selectionChange)="load()">
+        <mat-option value="">All Statuses</mat-option>
+        <mat-option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-stroked-button (click)="load()"><mat-icon>refresh</mat-icon></button>
+  </div>
+
+  <app-data-grid
+    [columns]="columns"
+    [rows]="appointments"
+    [loading]="loading"
+    searchPlaceholder="Search patient, doctor, ID..."
+    exportFilename="appointments"
+    emptyMessage="No appointments found">
+
+    <ng-template appGridCell="appointmentId" let-a>
+      <span class="id-chip">{{ a.appointmentId }}</span>
+    </ng-template>
+
+    <ng-template appGridCell="type" let-a>{{ a.type | titlecase }}</ng-template>
+
+    <ng-template appGridCell="status" let-a>
+      <span class="status-chip" [class]="getStatusClass(a.status)">{{ a.status | titlecase }}</span>
+    </ng-template>
+
+    <ng-template appGridCell="actions" let-a>
+      <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="Actions" (click)="$event.stopPropagation()"><mat-icon>more_vert</mat-icon></button>
+      <mat-menu #menu>
+        <button mat-menu-item (click)="updateStatus(a._id,'confirmed')"><mat-icon>check</mat-icon> Confirm</button>
+        <button mat-menu-item (click)="updateStatus(a._id,'completed')"><mat-icon>done_all</mat-icon> Complete</button>
+        <button mat-menu-item (click)="cancel(a._id)" style="color:#f44336"><mat-icon color="warn">cancel</mat-icon> Cancel</button>
+      </mat-menu>
+    </ng-template>
+  </app-data-grid>
+</div>

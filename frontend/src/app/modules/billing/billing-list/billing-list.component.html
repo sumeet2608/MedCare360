@@ -1,0 +1,192 @@
+<div class="fade-in">
+  <div class="page-header">
+    <div><h1>Billing & Invoices</h1><p>{{ total }} total invoices</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button mat-stroked-button (click)="archiveCleared()" [disabled]="resetting"
+              matTooltip="Move all Cleared invoices to archive — resets the Cleared count to 0"
+              style="border-color:#059669;color:#059669">
+        <mat-icon>archive</mat-icon> Archive Cleared
+      </button>
+      <button mat-stroked-button (click)="resetRevenue()" [disabled]="resetting"
+              matTooltip="Archive ALL invoices — resets monthly revenue to ₹0"
+              style="border-color:#dc2626;color:#dc2626">
+        <mat-icon>restart_alt</mat-icon> Reset Revenue
+      </button>
+      <button mat-raised-button color="primary" routerLink="/billing/new"><mat-icon>add</mat-icon> New Invoice</button>
+    </div>
+  </div>
+
+  <!-- Status View Tabs -->
+  <div class="billing-tabs">
+    <button class="btab" [class.active]="statusView==='pending'" (click)="setStatusView('pending')">
+      <mat-icon>pending_actions</mat-icon>
+      Pending / Unpaid
+      <span class="btab-count">{{ pendingCount }}</span>
+    </button>
+    <button class="btab" [class.active]="statusView==='all'" (click)="setStatusView('all')">
+      <mat-icon>list</mat-icon>
+      All Invoices
+      <span class="btab-count">{{ total }}</span>
+    </button>
+    <button class="btab" [class.active]="statusView==='cleared'" (click)="setStatusView('cleared')">
+      <mat-icon>check_circle</mat-icon>
+      Cleared
+      <span class="btab-count">{{ clearedCount }}</span>
+    </button>
+  </div>
+
+  <!-- Revenue Stats — site glassmorphism cards -->
+  <div class="site-stats-row" *ngIf="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+    <div class="site-stat-card">
+      <div class="ssc-icon" style="background:#d1fae5"><mat-icon style="color:#059669">today</mat-icon></div>
+      <div class="ssc-body">
+        <div class="ssc-value">₹{{ stats.todayRevenue | number }}</div>
+        <div class="ssc-label">Today's Revenue</div>
+      </div>
+    </div>
+    <div class="site-stat-card">
+      <div class="ssc-icon" style="background:#e0f2fe"><mat-icon style="color:#0891b2">calendar_month</mat-icon></div>
+      <div class="ssc-body">
+        <div class="ssc-value">₹{{ stats.monthRevenue | number }}</div>
+        <div class="ssc-label">Monthly Revenue</div>
+      </div>
+    </div>
+    <div class="site-stat-card">
+      <div class="ssc-icon" style="background:#fee2e2"><mat-icon style="color:#dc2626">pending_actions</mat-icon></div>
+      <div class="ssc-body">
+        <div class="ssc-value">₹{{ stats.pendingAmount | number }}</div>
+        <div class="ssc-label">Pending Amount</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Breakdown -->
+  <div class="breakdown-section" *ngIf="categoryBreakdown.length > 0">
+    <div class="breakdown-title">Bifurcation by Category</div>
+    <div class="breakdown-chips">
+      <button class="cat-chip" [class.active]="categoryFilter === 'all'" (click)="setFilter('all')">
+        <mat-icon>list</mat-icon> All <span class="chip-count">{{ invoices.length }}</span>
+      </button>
+      <button class="cat-chip" *ngFor="let c of categoryBreakdown"
+              [class.active]="categoryFilter === c.category"
+              [style.--chip-color]="c.color"
+              (click)="setFilter(c.category)">
+        <mat-icon [style.color]="c.color">{{ c.icon }}</mat-icon>
+        {{ c.label }}
+        <span class="chip-count">{{ c.count }}</span>
+        <span class="chip-amount">₹{{ c.amount | number }}</span>
+      </button>
+    </div>
+  </div>
+
+  <app-data-grid
+    [columns]="columns"
+    [rows]="filteredInvoices"
+    [loading]="loading"
+    searchPlaceholder="Search invoice no, patient..."
+    exportFilename="invoices"
+    emptyMessage="No invoices found">
+
+    <ng-template appGridCell="invoiceNumber" let-b>
+      <span style="font-weight:600;color:var(--primary);font-size:0.8rem">{{ b.invoiceNumber }}</span>
+    </ng-template>
+
+    <ng-template appGridCell="category" let-b>
+      <span class="cat-badge" [style.background]="getCategoryColor(b.primaryCategory) + '1a'"
+            [style.color]="getCategoryColor(b.primaryCategory)"
+            [style.border-color]="getCategoryColor(b.primaryCategory) + '44'">
+        {{ getCategoryLabel(b.primaryCategory) }}
+      </span>
+    </ng-template>
+
+    <ng-template appGridCell="paidAmount" let-b><span style="color:#4caf50">₹{{ b.paidAmount | number }}</span></ng-template>
+    <ng-template appGridCell="dueAmount" let-b><span [style.color]="b.dueAmount > 0 ? '#f44336' : '#4caf50'">₹{{ b.dueAmount | number }}</span></ng-template>
+
+    <ng-template appGridCell="status" let-b>
+      <!-- Cleared = paid with zero due (fully settled) -->
+      <ng-container *ngIf="b.clearedAt || (b.status === 'paid' && b.dueAmount === 0)">
+        <span class="status-chip cleared-chip">
+          <mat-icon style="font-size:12px;width:12px;height:12px;margin-right:3px">check_circle</mat-icon>
+          Cleared
+        </span>
+      </ng-container>
+      <ng-container *ngIf="!(b.clearedAt || (b.status === 'paid' && b.dueAmount === 0))">
+        <span class="status-chip" [class]="getStatusClass(b.status)">{{ b.status | titlecase }}</span>
+      </ng-container>
+    </ng-template>
+
+    <ng-template appGridCell="actions" let-b>
+      <button mat-icon-button matTooltip="View Invoice" (click)="$event.stopPropagation(); view(b._id)"><mat-icon>receipt</mat-icon></button>
+      <button mat-icon-button matTooltip="Record Payment" (click)="$event.stopPropagation(); recordPayment(b._id)"
+              *ngIf="b.status !== 'paid' && !b.clearedAt"><mat-icon style="color:#4caf50">payments</mat-icon></button>
+    </ng-template>
+  </app-data-grid>
+</div>
+
+<style>
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:20px; }
+.mini-stat { display:flex; align-items:center; gap:16px; padding:16px 20px; }
+.mini-stat mat-icon { font-size:32px; width:32px; height:32px; }
+.mini-stat .val { font-size:1.4rem; font-weight:700; }
+.mini-stat .lbl { font-size:0.8rem; color:#666; }
+
+/* Billing Status Tabs */
+.billing-tabs {
+  display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.btab {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 10px; border: 1.5px solid var(--border-light);
+  background: white; cursor: pointer; font-family: 'Figtree', sans-serif;
+  font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
+  transition: all 0.18s ease-out;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &:hover { border-color: var(--primary); color: var(--primary); background: rgba(8,145,178,0.04); }
+  &.active {
+    background: var(--primary); color: white; border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(8,145,178,0.3);
+    mat-icon { color: white; }
+  }
+}
+.btab-count {
+  background: rgba(0,0,0,0.12); border-radius: 10px; padding: 1px 7px;
+  font-size: 0.72rem; font-weight: 700;
+  .btab.active & { background: rgba(255,255,255,0.25); }
+}
+
+.cleared-chip {
+  background: #d1fae5 !important; color: #065f46 !important;
+  border: 1px solid #6ee7b7 !important; font-weight: 700 !important;
+  display: inline-flex; align-items: center;
+}
+
+.breakdown-section { margin-bottom:20px; }
+.breakdown-title { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#666; margin-bottom:10px; }
+.breakdown-chips { display:flex; flex-wrap:wrap; gap:8px; }
+
+.cat-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  border:1px solid rgba(0,0,0,0.12);
+  background:white; border-radius:20px;
+  padding:5px 12px; font-size:0.8rem;
+  cursor:pointer; transition:all 0.18s ease;
+  font-family:inherit; color:#555;
+}
+.cat-chip mat-icon { font-size:15px; width:15px; height:15px; }
+.cat-chip .chip-count { background:rgba(0,0,0,0.08); border-radius:10px; padding:1px 6px; font-size:0.72rem; font-weight:700; }
+.cat-chip .chip-amount { font-size:0.72rem; color:#888; }
+.cat-chip:hover, .cat-chip.active {
+  background:var(--chip-color, #0891b2);
+  color:white; border-color:transparent;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.cat-chip.active { background:#0891b2; }
+.cat-chip.active mat-icon { color:white !important; }
+.cat-chip.active .chip-count { background:rgba(255,255,255,0.3); color:white; }
+.cat-chip.active .chip-amount { color:rgba(255,255,255,0.8); }
+
+.cat-badge {
+  display:inline-block; border:1px solid; border-radius:6px;
+  padding:2px 8px; font-size:0.72rem; font-weight:600;
+}
+</style>

@@ -1,0 +1,35 @@
+<div class="search-overlay" *ngIf="open" (click)="close()">
+  <div class="search-panel" (click)="$event.stopPropagation()">
+    <div class="search-input-row">
+      <mat-icon>search</mat-icon>
+      <input #searchInput autofocus [value]="query" (input)="onQueryChange($any($event.target).value)"
+             placeholder="Search patients, doctors, medicines, or type a command...">
+      <span class="kbd-hint">ESC</span>
+    </div>
+
+    <div class="search-results">
+      <div class="loading-row" *ngIf="loading"><mat-spinner diameter="20"></mat-spinner> Searching...</div>
+
+      <ng-container *ngFor="let group of displayGroups">
+        <div class="group-label">{{ group.label }}</div>
+        <button class="result-row" *ngFor="let item of group.items"
+                [class.active]="item.itemIndex === activeIndex"
+                (click)="goTo(item.route)" (mouseenter)="activeIndex = item.itemIndex">
+          <mat-icon>{{ group.icon }}</mat-icon>
+          <span class="r-label">{{ item.label }}</span>
+          <span class="r-sub" *ngIf="item.sub">{{ item.sub }}</span>
+        </button>
+      </ng-container>
+
+      <div class="empty-row" *ngIf="!loading && query && !displayGroups.length">
+        <mat-icon>search_off</mat-icon> No results for "{{ query }}"
+      </div>
+    </div>
+
+    <div class="search-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+      <span><kbd>Enter</kbd> Select</span>
+      <span><kbd>Ctrl</kbd>+<kbd>K</kbd> Toggle</span>
+    </div>
+  </div>
+</div>

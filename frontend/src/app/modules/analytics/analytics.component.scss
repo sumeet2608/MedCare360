@@ -1,0 +1,87 @@
+// Analytics KPI row — 3 columns so cards are never squeezed
+// Wraps to 2 then 1 column on narrow viewports
+.analytics-kpi-row {
+  grid-template-columns: repeat(3, 1fr) !important;
+  margin-bottom: 20px;
+
+  @media (max-width: 900px)  { grid-template-columns: repeat(2, 1fr) !important; }
+  @media (max-width: 480px)  { grid-template-columns: 1fr !important; }
+
+  // Compact cards — smaller fonts so label never wraps
+  .site-stat-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+  .ssc-icon { width: 40px; height: 40px; border-radius: 11px; }
+  .ssc-value { font-size: 1.4rem; }
+  .ssc-label { font-size: 0.66rem; }
+  .ssc-trend { font-size: 0.66rem; padding: 2px 7px; align-self: flex-end; margin-top: auto; }
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  text-align: center;
+  padding: 20px 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  transition: all var(--ease-base);
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--primary-mid);
+  }
+
+  .kpi-icon {
+    font-size: 2rem;
+    height: 2rem;
+    width: 2rem;
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-family: 'Figtree', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+  }
+
+  .kpi-label {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 600;
+  }
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  mat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 16px 0;
+  }
+
+  mat-card-content {
+    padding: 16px;
+  }
+}

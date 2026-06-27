@@ -1,0 +1,56 @@
+<div class="fade-in">
+  <div class="emergency-header">
+    <div class="header-icon"><mat-icon>emergency</mat-icon></div>
+    <div>
+      <h1>Emergency First Aid Guide</h1>
+      <p>Select an emergency type for immediate guidance</p>
+    </div>
+  </div>
+
+  <div class="disclaimer-banner" style="margin-bottom:24px">
+    <strong>⚠ Important:</strong> This guide provides first aid education only. In any emergency, <strong>CALL 108 or 112 IMMEDIATELY</strong>.
+    Do not delay professional medical help. Always contact licensed healthcare professionals.
+  </div>
+
+  <!-- Emergency Grid — Magic MCP Dark Gradient Cards -->
+  <div class="emergency-grid">
+    <div class="magic-emergency-card" *ngFor="let e of emergencies; let i = index"
+         (click)="navigate(e.type)"
+         [style.background]="e.darkGradient || ('linear-gradient(135deg,' + e.color + 'dd,' + e.color + ')')"
+         tabindex="0" (keydown.enter)="navigate(e.type)" [attr.aria-label]="e.label">
+
+      <!-- SVG decorative circles (Magic MCP pattern) -->
+      <svg class="card-deco-svg" viewBox="0 0 300 200" fill="none" aria-hidden="true">
+        <circle cx="230" cy="60"  r="80" fill="#fff" fill-opacity="0.07"/>
+        <circle cx="265" cy="140" r="45" fill="#fff" fill-opacity="0.05"/>
+        <circle cx="200" cy="30"  r="30" fill="#fff" fill-opacity="0.09"/>
+      </svg>
+
+      <div class="mec-inner">
+        <div class="mec-icon-wrap">
+          <mat-icon>{{ e.icon }}</mat-icon>
+        </div>
+        <div class="mec-info">
+          <h3>{{ e.label }}</h3>
+          <p>{{ e.desc }}</p>
+        </div>
+        <mat-icon class="mec-arrow" aria-hidden="true">arrow_forward</mat-icon>
+      </div>
+    </div>
+  </div>
+
+  <mat-card class="sos-card">
+    <div class="sos-content">
+      <mat-icon style="font-size:48px;width:48px;height:48px;color:#f44336">call</mat-icon>
+      <div>
+        <h2>Emergency Numbers</h2>
+        <div class="number-grid">
+          <div class="number-item"><span class="num">108</span><span class="lbl">Ambulance</span></div>
+          <div class="number-item"><span class="num">112</span><span class="lbl">Emergency</span></div>
+          <div class="number-item"><span class="num">102</span><span class="lbl">Ambulance (State)</span></div>
+          <div class="number-item"><span class="num">1066</span><span class="lbl">Poison Control</span></div>
+        </div>
+      </div>
+    </div>
+  </mat-card>
+</div>

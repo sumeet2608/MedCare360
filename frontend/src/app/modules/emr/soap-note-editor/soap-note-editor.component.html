@@ -1,0 +1,271 @@
+<div class="fade-in soap-page">
+  <div class="page-header">
+    <div>
+      <h1><mat-icon>assignment</mat-icon> {{ noteId && noteId !== 'new' ? 'Edit SOAP Note' : 'New SOAP Note' }}</h1>
+      <p>Structured clinical documentation — Subjective · Objective · Assessment · Plan</p>
+    </div>
+    <div class="header-actions">
+      <button mat-button (click)="cancel()" [disabled]="saving">Cancel</button>
+      <button mat-stroked-button (click)="save(false)" [disabled]="saving || isSigned">
+        <mat-spinner *ngIf="saving" diameter="16" style="display:inline-block;margin-right:6px"></mat-spinner>
+        Save Draft
+      </button>
+      <button mat-raised-button color="primary" (click)="save(true)" [disabled]="saving || isSigned">
+        <mat-icon>edit</mat-icon> Sign Note
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isSigned" class="signed-banner">
+    <mat-icon>verified</mat-icon> This note is signed and locked. Create an addendum to make changes.
+  </div>
+
+  <div class="soap-grid" *ngIf="!loading">
+    <!-- Patient + Doctor -->
+    <mat-card class="soap-card meta-card">
+      <div class="card-title"><mat-icon>person</mat-icon> Encounter Details</div>
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Patient *</mat-label>
+          <mat-select [(ngModel)]="note.patient" [disabled]="isSigned">
+            <mat-option *ngFor="let p of patients" [value]="p._id">{{ p.fullName }} — {{ p.patientId }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Doctor</mat-label>
+          <mat-select [(ngModel)]="note.doctor" [disabled]="isSigned">
+            <mat-option *ngFor="let d of doctors" [value]="d._id">{{ d.fullName }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Encounter Date</mat-label>
+          <input matInput type="date" [(ngModel)]="note.encounterDate" [disabled]="isSigned">
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <!-- S — Subjective -->
+    <mat-card class="soap-card">
+      <div class="card-title soap-s"><span class="soap-letter s">S</span> Subjective</div>
+      <div class="form-col">
+        <mat-form-field appearance="outline">
+          <mat-label>Chief Complaint *</mat-label>
+          <input matInput [(ngModel)]="note.subjective.chiefComplaint" [disabled]="isSigned" placeholder="Primary reason for visit">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>History of Present Illness (HPI)</mat-label>
+          <textarea matInput rows="4" [(ngModel)]="note.subjective.hpi" [disabled]="isSigned"
+            placeholder="Onset, location, duration, character, alleviating/aggravating factors, radiation, severity..."></textarea>
+        </mat-form-field>
+        <div class="field-group">
+          <label class="field-label">Symptoms</label>
+          <div class="chip-input-row">
+            <input class="tag-input" [(ngModel)]="symptomInput" [disabled]="isSigned" placeholder="Add symptom..."
+              (keydown.enter)="addToArray('subjective.symptoms', 'symptomInput')">
+            <button mat-icon-button (click)="addToArray('subjective.symptoms', 'symptomInput')" [disabled]="isSigned"><mat-icon>add</mat-icon></button>
+          </div>
+          <div class="tags-row">
+            <span class="tag symptom" *ngFor="let s of note.subjective.symptoms; let i=index">
+              {{ s }} <mat-icon (click)="removeFromArray('subjective.symptoms', i)" *ngIf="!isSigned">close</mat-icon>
+            </span>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Duration</mat-label>
+            <input matInput [(ngModel)]="note.subjective.duration" [disabled]="isSigned" placeholder="e.g. 3 days">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Severity</mat-label>
+            <mat-select [(ngModel)]="note.subjective.severity" [disabled]="isSigned">
+              <mat-option value="mild">Mild</mat-option>
+              <mat-option value="moderate">Moderate</mat-option>
+              <mat-option value="severe">Severe</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Pertinent Medical History</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="note.subjective.pertinentHistory" [disabled]="isSigned"></textarea>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Current Medications</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="note.subjective.medicationHistory" [disabled]="isSigned"></textarea>
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <!-- O — Objective -->
+    <mat-card class="soap-card">
+      <div class="card-title soap-o"><span class="soap-letter o">O</span> Objective</div>
+      <div class="form-col">
+        <div class="vitals-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>BP (systolic/diastolic)</mat-label>
+            <input matInput [(ngModel)]="note.objective.vitals.bp" [disabled]="isSigned" placeholder="120/80">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Heart Rate (bpm)</mat-label>
+            <input matInput type="number" [(ngModel)]="note.objective.vitals.hr" [disabled]="isSigned">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Temp (°C)</mat-label>
+            <input matInput type="number" step="0.1" [(ngModel)]="note.objective.vitals.temp" [disabled]="isSigned">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>SpO₂ (%)</mat-label>
+            <input matInput type="number" [(ngModel)]="note.objective.vitals.spo2" [disabled]="isSigned">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Weight (kg)</mat-label>
+            <input matInput type="number" step="0.1" [(ngModel)]="note.objective.vitals.weight" [disabled]="isSigned">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Height (cm)</mat-label>
+            <input matInput type="number" [(ngModel)]="note.objective.vitals.height" [disabled]="isSigned">
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>General Appearance</mat-label>
+          <input matInput [(ngModel)]="note.objective.generalAppearance" [disabled]="isSigned" placeholder="e.g. Alert and oriented, no acute distress">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Physical Examination Findings</mat-label>
+          <textarea matInput rows="5" [(ngModel)]="note.objective.physicalExam" [disabled]="isSigned"
+            placeholder="Systematic examination findings by system..."></textarea>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Lab Results Summary</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="note.objective.labResults" [disabled]="isSigned"></textarea>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Imaging Findings</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="note.objective.imagingFindings" [disabled]="isSigned"></textarea>
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <!-- A — Assessment -->
+    <mat-card class="soap-card">
+      <div class="card-title soap-a"><span class="soap-letter a">A</span> Assessment</div>
+      <div class="form-col">
+        <!-- ICD-10 Search -->
+        <div class="icd-search-block">
+          <label class="field-label">ICD-10 Diagnosis Search</label>
+          <div class="icd-search-row">
+            <input class="icd-input" [(ngModel)]="icd10Query" [disabled]="isSigned"
+              placeholder="Search by code or description (e.g. hypertension, E11, J18)..."
+              (keydown.enter)="searchICD10()">
+            <button mat-stroked-button (click)="searchICD10()" [disabled]="isSigned || icd10Loading">
+              <mat-spinner *ngIf="icd10Loading" diameter="14" style="display:inline-block"></mat-spinner>
+              <mat-icon *ngIf="!icd10Loading">search</mat-icon> Search
+            </button>
+          </div>
+          <div class="icd-results" *ngIf="icd10Results.length > 0">
+            <div class="icd-result" *ngFor="let r of icd10Results" (click)="selectICD10(r)">
+              <strong class="icd-code">{{ r.code }}</strong>
+              <span>{{ r.description }}</span>
+              <span class="icd-cat">{{ r.category }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-row-2" *ngIf="note.assessment.icd10Code">
+          <mat-form-field appearance="outline">
+            <mat-label>ICD-10 Code</mat-label>
+            <input matInput [(ngModel)]="note.assessment.icd10Code" [disabled]="isSigned">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>ICD-10 Description</mat-label>
+            <input matInput [(ngModel)]="note.assessment.icd10Description" [disabled]="isSigned">
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Primary Diagnosis *</mat-label>
+          <input matInput [(ngModel)]="note.assessment.primaryDiagnosis" [disabled]="isSigned">
+        </mat-form-field>
+        <div class="field-group">
+          <label class="field-label">Differential Diagnoses</label>
+          <div class="chip-input-row">
+            <input class="tag-input" [(ngModel)]="differentialInput" [disabled]="isSigned" placeholder="Add differential..."
+              (keydown.enter)="addToArray('assessment.differentials', 'differentialInput')">
+            <button mat-icon-button (click)="addToArray('assessment.differentials', 'differentialInput')" [disabled]="isSigned"><mat-icon>add</mat-icon></button>
+          </div>
+          <div class="tags-row">
+            <span class="tag diff" *ngFor="let d of note.assessment.differentials; let i=index">
+              {{ d }} <mat-icon (click)="removeFromArray('assessment.differentials', i)" *ngIf="!isSigned">close</mat-icon>
+            </span>
+          </div>
+        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Clinical Reasoning</mat-label>
+          <textarea matInput rows="3" [(ngModel)]="note.assessment.clinicalReasoning" [disabled]="isSigned"
+            placeholder="Explain reasoning behind diagnosis..."></textarea>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Prognosis</mat-label>
+          <input matInput [(ngModel)]="note.assessment.prognosis" [disabled]="isSigned" placeholder="e.g. Good with treatment compliance">
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <!-- P — Plan -->
+    <mat-card class="soap-card">
+      <div class="card-title soap-p"><span class="soap-letter p">P</span> Plan</div>
+      <div class="form-col">
+        <div class="field-group">
+          <label class="field-label">Medications Ordered</label>
+          <div class="chip-input-row">
+            <input class="tag-input" [(ngModel)]="medInput" [disabled]="isSigned" placeholder="e.g. Amoxicillin 500mg TID x 7 days"
+              (keydown.enter)="addToArray('plan.medications', 'medInput')">
+            <button mat-icon-button (click)="addToArray('plan.medications', 'medInput')" [disabled]="isSigned"><mat-icon>add</mat-icon></button>
+          </div>
+          <div class="tags-row">
+            <span class="tag med" *ngFor="let m of note.plan.medications; let i=index">
+              <mat-icon>medication</mat-icon>{{ m }}
+              <mat-icon class="remove" (click)="removeFromArray('plan.medications', i)" *ngIf="!isSigned">close</mat-icon>
+            </span>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Investigations / Tests Ordered</label>
+          <div class="chip-input-row">
+            <input class="tag-input" [(ngModel)]="investInput" [disabled]="isSigned" placeholder="e.g. CBC, Chest X-Ray, HbA1c"
+              (keydown.enter)="addToArray('plan.investigations', 'investInput')">
+            <button mat-icon-button (click)="addToArray('plan.investigations', 'investInput')" [disabled]="isSigned"><mat-icon>add</mat-icon></button>
+          </div>
+          <div class="tags-row">
+            <span class="tag invest" *ngFor="let v of note.plan.investigations; let i=index">
+              <mat-icon>science</mat-icon>{{ v }}
+              <mat-icon class="remove" (click)="removeFromArray('plan.investigations', i)" *ngIf="!isSigned">close</mat-icon>
+            </span>
+          </div>
+        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Patient Education / Counselling</mat-label>
+          <textarea matInput rows="2" [(ngModel)]="note.plan.patientEducation" [disabled]="isSigned"></textarea>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Follow-Up Instructions</mat-label>
+          <input matInput [(ngModel)]="note.plan.followUp" [disabled]="isSigned" placeholder="e.g. Return in 2 weeks or if symptoms worsen">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Restrictions / Activity</mat-label>
+          <input matInput [(ngModel)]="note.plan.restrictions" [disabled]="isSigned" placeholder="e.g. Bed rest 3 days, avoid strenuous activity">
+        </mat-form-field>
+      </div>
+    </mat-card>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <mat-spinner diameter="48"></mat-spinner><p>Loading SOAP note...</p>
+  </div>
+
+  <!-- Bottom Actions -->
+  <div class="bottom-actions" *ngIf="!loading">
+    <button mat-button (click)="cancel()">Cancel</button>
+    <button mat-stroked-button (click)="save(false)" [disabled]="saving || isSigned">Save Draft</button>
+    <button mat-raised-button color="primary" (click)="save(true)" [disabled]="saving || isSigned">
+      <mat-icon>verified</mat-icon> Sign & Finalize Note
+    </button>
+  </div>
+</div>

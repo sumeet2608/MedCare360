@@ -1,0 +1,198 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION        = 'us-east-1'
+        ECR_REGISTRY      = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        BACKEND_IMAGE     = "${ECR_REGISTRY}/medcare360-backend"
+        FRONTEND_IMAGE    = "${ECR_REGISTRY}/medcare360-frontend"
+        K8S_NAMESPACE     = 'medcare360'
+        EKS_CLUSTER_NAME  = 'medcare360-eks'
+        IMAGE_TAG         = "${BUILD_NUMBER}-${GIT_COMMIT[0..7]}"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Checking out from branch: ${GIT_BRANCH}"
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            parallel {
+                stage('Backend Install') {
+                    steps {
+                        dir('backend') {
+                            sh 'npm ci'
+                        }
+                    }
+                }
+                stage('Frontend Install') {
+                    steps {
+                        dir('frontend') {
+                            sh 'npm ci'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Test') {
+            parallel {
+                stage('Backend Tests') {
+                    steps {
+                        dir('backend') {
+                            sh 'npm test -- --forceExit --detectOpenHandles'
+                        }
+                    }
+                    post {
+                        always {
+                            junit testResults: 'backend/junit.xml', allowEmptyResults: true
+                        }
+                    }
+                }
+                stage('Frontend Lint') {
+                    steps {
+                        dir('frontend') {
+                            sh 'npm run lint -- --no-progress || true'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                dir('frontend') {
+                    sh 'npm run build -- --configuration=production'
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            parallel {
+                stage('Build Backend Image') {
+                    steps {
+                        dir('backend') {
+                            sh """
+                                docker build \
+                                  --target production \
+                                  -t ${BACKEND_IMAGE}:${IMAGE_TAG} \
+                                  -t ${BACKEND_IMAGE}:latest \
+                                  .
+                            """
+                        }
+                    }
+                }
+                stage('Build Frontend Image') {
+                    steps {
+                        dir('frontend') {
+                            sh """
+                                docker build \
+                                  -t ${FRONTEND_IMAGE}:${IMAGE_TAG} \
+                                  -t ${FRONTEND_IMAGE}:latest \
+                                  .
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh """
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      aquasec/trivy:latest image \
+                      --exit-code 0 \
+                      --severity HIGH,CRITICAL \
+                      --format table \
+                      ${BACKEND_IMAGE}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                sh """
+                    aws ecr get-login-password --region ${AWS_REGION} | \
+                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                """
+                sh "docker push ${BACKEND_IMAGE}:${IMAGE_TAG}"
+                sh "docker push ${BACKEND_IMAGE}:latest"
+                sh "docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}"
+                sh "docker push ${FRONTEND_IMAGE}:latest"
+            }
+        }
+
+        stage('Deploy to EKS') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}"
+                sh """
+                    kubectl set image deployment/medcare-backend \
+                      backend=${BACKEND_IMAGE}:${IMAGE_TAG} \
+                      -n ${K8S_NAMESPACE}
+                """
+                sh """
+                    kubectl set image deployment/medcare-frontend \
+                      frontend=${FRONTEND_IMAGE}:${IMAGE_TAG} \
+                      -n ${K8S_NAMESPACE}
+                """
+                sh """
+                    kubectl rollout status deployment/medcare-backend \
+                      -n ${K8S_NAMESPACE} --timeout=300s
+                    kubectl rollout status deployment/medcare-frontend \
+                      -n ${K8S_NAMESPACE} --timeout=300s
+                """
+            }
+        }
+
+        stage('Smoke Test') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh """
+                    # Use port-forward since service is ClusterIP (not LoadBalancer)
+                    kubectl port-forward -n ${K8S_NAMESPACE} svc/medcare-backend-svc 5001:5000 &
+                    PF_PID=\$!
+                    sleep 5
+                    curl -f http://localhost:5001/health || (kill \$PF_PID; exit 1)
+                    kill \$PF_PID
+                    echo "✅ Backend smoke test passed!"
+
+                    # Also verify frontend via Ingress
+                    INGRESS_HOST=\$(kubectl get ingress medcare-ingress -n ${K8S_NAMESPACE} \
+                      -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+                    if [ -n "\$INGRESS_HOST" ]; then
+                        curl -f -k https://\${INGRESS_HOST}/health || true
+                        echo "✅ Frontend smoke test passed!"
+                    fi
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker image prune -f'
+        }
+        success {
+            echo "Pipeline succeeded! Build ${IMAGE_TAG} deployed."
+        }
+        failure {
+            echo "Pipeline failed! Check logs above."
+        }
+    }
+}

@@ -1,0 +1,90 @@
+<div class="detail-page fade-in" *ngIf="!loading && doctor">
+  <button mat-button class="back-btn" (click)="goBack()"><mat-icon>arrow_back</mat-icon> Back to Doctors</button>
+
+  <div class="profile-hero">
+    <div class="hero-glow"></div>
+    <div class="hero-avatar" [style.background]="avatarGradient(doctor.user?.firstName, doctor.user?.lastName)">
+      {{ initials(doctor.user?.firstName, doctor.user?.lastName) }}
+    </div>
+
+    <div class="hero-info">
+      <h1>Dr. {{ doctor.user?.firstName }} {{ doctor.user?.lastName }}</h1>
+      <span class="spec-badge">{{ doctor.specialization }}</span>
+      <p class="qualification">{{ (doctor.qualification || []).join(', ') }}</p>
+
+      <div class="rating-row">
+        <span class="star" *ngFor="let s of stars(doctor.rating)" [class.filled]="s">★</span>
+        <span class="rating-num">{{ doctor.rating?.toFixed(1) || '—' }}</span>
+        <span class="rating-count">({{ doctor.totalRatings || 0 }} ratings)</span>
+      </div>
+
+      <div class="quick-stats">
+        <div class="stat"><mat-icon>work_history</mat-icon><span>{{ doctor.experience }} years experience</span></div>
+        <div class="stat"><mat-icon>translate</mat-icon><span>{{ (doctor.languages || []).join(', ') }}</span></div>
+        <div class="stat"><mat-icon>local_hospital</mat-icon><span>{{ doctor.department }}</span></div>
+        <div class="stat" *ngIf="doctor.isAvailableForEmergency"><mat-icon>emergency</mat-icon><span>Emergency Available</span></div>
+      </div>
+    </div>
+
+    <div class="hero-actions">
+      <div class="fee-box">
+        <span class="fee">₹{{ doctor.consultationFee }}</span>
+        <span class="fee-label">consultation fee</span>
+      </div>
+      <button mat-stroked-button (click)="editDoctor()"><mat-icon>edit</mat-icon> Edit Profile</button>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <mat-card class="glass-card bio-card" *ngIf="doctor.bio">
+      <h3><mat-icon>info</mat-icon> About</h3>
+      <p>{{ doctor.bio }}</p>
+    </mat-card>
+
+    <mat-card class="glass-card schedule-card">
+      <h3><mat-icon>event_available</mat-icon> Weekly Availability</h3>
+      <div class="week-grid">
+        <div class="week-day" *ngFor="let day of weekDays" [class.active]="isScheduledDay(day)">
+          <span class="day-name">{{ day.slice(0,3) }}</span>
+          <span class="day-time" *ngIf="isScheduledDay(day)">{{ scheduleFor(day)?.startTime }} – {{ scheduleFor(day)?.endTime }}</span>
+          <span class="day-off" *ngIf="!isScheduledDay(day)">Off</span>
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="glass-card booking-card">
+      <h3><mat-icon>calendar_today</mat-icon> Book an Appointment</h3>
+
+      <div class="date-strip">
+        <ng-container *ngFor="let d of days">
+          <span class="month-label" *ngIf="d.showMonth">{{ d.monthLabel }}</span>
+          <button class="date-pill" [class.active]="isSelected(d.date)" (click)="selectedDate = d.date; loadAvailability()">
+            <span class="dow">{{ d.dayName }}</span>
+            <span class="dom">{{ d.label }}</span>
+          </button>
+        </ng-container>
+      </div>
+
+      <div class="slots-area" *ngIf="!loadingSlots">
+        <ng-container *ngIf="availability?.available && availability!.slots.length">
+          <div class="slot-grid">
+            <button class="slot-btn" *ngFor="let slot of availability!.slots" (click)="bookSlot(slot)">{{ slot }}</button>
+          </div>
+        </ng-container>
+        <div class="no-slots" *ngIf="!availability?.available || !availability?.slots?.length">
+          <mat-icon>event_busy</mat-icon>
+          <p>No slots available on this date</p>
+        </div>
+      </div>
+      <div class="slots-loading" *ngIf="loadingSlots"><mat-spinner diameter="32"></mat-spinner></div>
+    </mat-card>
+  </div>
+</div>
+
+<div class="loading-state" *ngIf="loading"><mat-spinner diameter="48"></mat-spinner></div>
+
+<div class="not-found" *ngIf="!loading && notFound">
+  <mat-icon>person_off</mat-icon>
+  <h3>Doctor not found</h3>
+  <button mat-raised-button color="primary" (click)="goBack()">Back to Doctors</button>
+</div>
