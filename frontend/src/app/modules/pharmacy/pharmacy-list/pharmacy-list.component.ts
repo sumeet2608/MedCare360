@@ -22,7 +22,7 @@ export class PharmacyListComponent implements OnInit {
 
   load(): void {
     this.loading = true;
-    let url = `${environment.apiUrl}/pharmacy?limit=100`;
+    let url = `${environment.apiUrl}/pharmacy?limit=1000`;
     if (this.showLowStock) url = `${environment.apiUrl}/pharmacy/low-stock`;
     if (this.showExpiring) url = `${environment.apiUrl}/pharmacy/expiring`;
 

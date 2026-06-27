@@ -67,9 +67,9 @@
         <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
         <mat-cell *matCellDef="let m"><span class="status-chip" [class]="getStockClass(m)">{{ getStockLabel(m) }}</span></mat-cell>
       </ng-container>
-      <ng-container matColumnDef="actions">
-        <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
-        <mat-cell *matCellDef="let m">
+      <ng-container matColumnDef="actions" [sticky]="false">
+        <mat-header-cell *matHeaderCellDef style="min-width:160px;width:160px">Actions</mat-header-cell>
+        <mat-cell *matCellDef="let m" style="min-width:160px;width:160px;overflow:visible">
           <button mat-icon-button matTooltip="View Details" [routerLink]="['/pharmacy', m._id]"><mat-icon>visibility</mat-icon></button>
           <button mat-icon-button matTooltip="Add Stock" (click)="updateStock(m._id,'add')"><mat-icon style="color:#4caf50">add_circle</mat-icon></button>
           <button mat-icon-button matTooltip="Dispense" (click)="updateStock(m._id,'remove')"><mat-icon style="color:#ff9800">remove_circle</mat-icon></button>
