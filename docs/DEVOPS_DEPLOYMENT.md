@@ -301,10 +301,10 @@ bash devops/scripts/setup-cicd-pipeline.sh
 | Service | URL |
 |---|---|
 | Application | https://medcare360.com (or ALB DNS) |
-| Jenkins | http://15.206.28.68:8080 |
-| Grafana | http://15.206.28.68:3000 |
-| Prometheus | http://15.206.28.68:9090 |
-| Kibana (ELK) | http://15.206.28.68:5601 |
+| Jenkins | http://65.1.111.108:8080 |
+| Grafana | http://65.1.111.108:3000 |
+| Prometheus | http://65.1.111.108:9090 |
+| Kibana (ELK) | http://65.1.111.108:5601 |
 | CloudWatch | AWS Console → CloudWatch → Dashboard: MedCare360-production |
 
 ---
