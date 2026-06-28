@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.angular
+.env
+.env.*
+.git
+.gitignore
+*.md
+e2e
+coverage
+src
