@@ -1,0 +1,35 @@
+---
+# Master Ansible Playbook — runs all roles in order
+# Usage: ansible-playbook -i inventory.ini site.yml
+- name: Configure Jenkins CI/CD Server
+  hosts: jenkins_server
+  become: yes
+  roles:
+    - install-docker
+    - install-jenkins
+    - install-kubectl
+    - install-terraform
+    - install-aws-cli
+
+- name: Configure Application Servers
+  hosts: app_servers
+  become: yes
+  roles:
+    - install-docker
+    - install-aws-cli
+
+- name: Configure Monitoring
+  hosts: monitoring
+  become: yes
+  tasks:
+    - name: Install Prometheus
+      include_tasks: tasks/install-prometheus.yml
+
+    - name: Install Grafana
+      include_tasks: tasks/install-grafana.yml
+
+    - name: Install Filebeat (ELK)
+      include_tasks: tasks/install-filebeat.yml
+
+    - name: Install CloudWatch Agent
+      include_tasks: tasks/install-cloudwatch-agent.yml

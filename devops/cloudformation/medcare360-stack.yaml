@@ -1,0 +1,437 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'MedCare360 Enterprise Healthcare Platform - CloudFormation Stack'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [production, staging, development]
+  ProjectName:
+    Type: String
+    Default: medcare360
+  VpcCIDR:
+    Type: String
+    Default: 10.0.0.0/16
+  EC2KeyPair:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 key pair for Jenkins server
+  JenkinsInstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues: [t3.micro, t3.small, t3.medium, t3.large]
+
+Resources:
+
+  # ── VPC ──────────────────────────────────────────────────────────────────────
+  MedCareVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-vpc
+        - Key: Environment
+          Value: !Ref Environment
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-igw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MedCareVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Public Subnets
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MedCareVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MedCareVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-public-2
+
+  # Private Subnets (for EKS nodes)
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MedCareVPC
+      CidrBlock: 10.0.10.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-private-1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MedCareVPC
+      CidrBlock: 10.0.11.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-private-2
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MedCareVPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteAssoc:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  # ── ECR Repositories ─────────────────────────────────────────────────────────
+  BackendECR:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}-backend
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [{
+              "rulePriority": 1,
+              "description": "Keep last 10 images",
+              "selection": {"tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 10},
+              "action": {"type": "expire"}
+            }]
+          }
+
+  FrontendECR:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}-frontend
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  # ── S3 Buckets ────────────────────────────────────────────────────────────────
+  TerraformStateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-terraform-state-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-artifacts-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldArtifacts
+            Status: Enabled
+            ExpirationInDays: 30
+
+  # ── DynamoDB for Terraform State Lock ─────────────────────────────────────────
+  TerraformLockTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${ProjectName}-terraform-locks
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: LockID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: LockID
+          KeyType: HASH
+
+  # ── Jenkins Security Group ────────────────────────────────────────────────────
+  JenkinsSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Jenkins CI/CD Server Security Group
+      VpcId: !Ref MedCareVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+          Description: Jenkins Web UI
+        - IpProtocol: tcp
+          FromPort: 50000
+          ToPort: 50000
+          CidrIp: 0.0.0.0/0
+          Description: Jenkins Agent
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  # ── Jenkins IAM Role ──────────────────────────────────────────────────────────
+  JenkinsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-jenkins-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonECR_FullAccess
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+      Policies:
+        - PolicyName: JenkinsEKSPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - eks:DescribeCluster
+                  - eks:ListClusters
+                  - eks:UpdateClusterConfig
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt ArtifactsBucket.Arn
+                  - !Sub ${ArtifactsBucket.Arn}/*
+
+  JenkinsInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref JenkinsRole
+
+  # ── Jenkins EC2 ───────────────────────────────────────────────────────────────
+  JenkinsServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref JenkinsInstanceType
+      KeyName: !Ref EC2KeyPair
+      IamInstanceProfile: !Ref JenkinsInstanceProfile
+      ImageId: ami-0f5ee92e2d63afc18  # Ubuntu 22.04 ap-south-1
+      SubnetId: !Ref PublicSubnet1
+      SecurityGroupIds:
+        - !Ref JenkinsSG
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install -y openjdk-17-jdk docker.io git curl unzip awscli
+
+          # Install Jenkins
+          curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+          echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/ | tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+          apt-get update -y && apt-get install -y jenkins
+
+          # Install Node.js 20
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y nodejs
+
+          # Install kubectl
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+          # Add jenkins to docker group
+          usermod -aG docker jenkins
+          systemctl enable jenkins docker
+          systemctl start jenkins docker
+
+          # Install Trivy
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-jenkins
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── CloudWatch Log Groups ─────────────────────────────────────────────────────
+  BackendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /medcare360/${Environment}/backend
+      RetentionInDays: 30
+
+  FrontendLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /medcare360/${Environment}/frontend
+      RetentionInDays: 30
+
+  JenkinsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /medcare360/${Environment}/jenkins
+      RetentionInDays: 14
+
+  # ── CloudWatch Alarms ─────────────────────────────────────────────────────────
+  HighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-high-cpu
+      AlarmDescription: Backend CPU utilization > 80%
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlertSNSTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref JenkinsServer
+
+  HealthCheckFailAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-health-check-fail
+      AlarmDescription: Backend /health endpoint failing
+      MetricName: StatusCheckFailed
+      Namespace: AWS/EC2
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref AlertSNSTopic
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref JenkinsServer
+
+  # ── SNS Topic for Alerts ─────────────────────────────────────────────────────
+  AlertSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${ProjectName}-alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: sumeetwebdeveloper.26@gmail.com
+
+  # ── CloudWatch Dashboard ──────────────────────────────────────────────────────
+  MedCareDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub ${ProjectName}-${Environment}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "title": "Jenkins Server CPU",
+                "metrics": [["AWS/EC2","CPUUtilization","InstanceId","${JenkinsServer}"]],
+                "period": 300, "stat": "Average", "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "log",
+              "properties": {
+                "title": "Backend Application Logs",
+                "query": "SOURCE '/medcare360/${Environment}/backend' | fields @timestamp, @message | sort @timestamp desc | limit 50",
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "title": "ECR Image Push Events",
+                "metrics": [["AWS/ECR","RepositoryPushCount","RepositoryName","${ProjectName}-backend"]],
+                "period": 86400, "stat": "Sum", "region": "${AWS::Region}"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  JenkinsPublicIP:
+    Description: Jenkins Server Public IP
+    Value: !GetAtt JenkinsServer.PublicIp
+    Export:
+      Name: !Sub ${ProjectName}-jenkins-ip
+
+  JenkinsURL:
+    Description: Jenkins Web UI URL
+    Value: !Sub http://${JenkinsServer.PublicIp}:8080
+
+  BackendECRURI:
+    Description: Backend ECR Repository URI
+    Value: !GetAtt BackendECR.RepositoryUri
+    Export:
+      Name: !Sub ${ProjectName}-backend-ecr
+
+  FrontendECRURI:
+    Description: Frontend ECR Repository URI
+    Value: !GetAtt FrontendECR.RepositoryUri
+    Export:
+      Name: !Sub ${ProjectName}-frontend-ecr
+
+  VpcId:
+    Description: VPC ID
+    Value: !Ref MedCareVPC
+    Export:
+      Name: !Sub ${ProjectName}-vpc-id
+
+  TerraformStateBucket:
+    Description: S3 bucket for Terraform state
+    Value: !Ref TerraformStateBucket
+    Export:
+      Name: !Sub ${ProjectName}-tfstate-bucket

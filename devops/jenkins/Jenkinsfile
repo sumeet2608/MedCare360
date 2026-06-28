@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION        = 'us-east-1'
+        AWS_REGION        = 'ap-south-1'
         ECR_REGISTRY      = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         BACKEND_IMAGE     = "${ECR_REGISTRY}/medcare360-backend"
         FRONTEND_IMAGE    = "${ECR_REGISTRY}/medcare360-frontend"
