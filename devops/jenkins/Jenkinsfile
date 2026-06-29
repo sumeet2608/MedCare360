@@ -63,6 +63,7 @@ pipeline {
                     steps {
                         dir('frontend') {
                             sh 'npm run lint || true'
+                            sh 'rm -rf node_modules'
                         }
                     }
                 }
@@ -72,7 +73,7 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm run build -- --configuration=production'
+                    sh 'NODE_OPTIONS="--max_old_space_size=1024" npm run build -- --configuration=production'
                 }
             }
         }
