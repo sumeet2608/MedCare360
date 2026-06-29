@@ -63,7 +63,6 @@ pipeline {
                     steps {
                         dir('frontend') {
                             sh 'npm run lint || true'
-                            sh 'rm -rf node_modules'
                         }
                     }
                 }
@@ -72,9 +71,8 @@ pipeline {
 
         stage('Build Frontend') {
             steps {
-                dir('frontend') {
-                    sh 'NODE_OPTIONS="--max_old_space_size=1024" npm run build -- --configuration=production'
-                }
+                echo "Angular build handled inside Docker multi-stage build — skipping Jenkins-side build to save RAM"
+                sh 'echo "Frontend build: delegated to Docker stage"'
             }
         }
 
